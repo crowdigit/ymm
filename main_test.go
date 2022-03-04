@@ -7,7 +7,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseReader(t *testing.T) {
+func TestParseLine(t *testing.T) {
+	tests := []struct {
+		Input  string
+		Expect ProgressMessage
+	}{
+		{
+			"[youtube] Ss-ba-g82-0: Downloading webpage\n",
+			ProgressExtractor{id: "Ss-ba-g82-0"},
+		},
+		{
+			"[download] Destination: gaburyu - エンパスィー _ 可不-Ss-ba-g82-0.webm\n",
+			ProgressDestination{destination: "gaburyu - エンパスィー _ 可不-Ss-ba-g82-0.webm"},
+		},
+		{
+			"[download]   1.0% of 2.91MiB at 120.99KiB/s ETA 00:24",
+			ProgressDownload{percentage: 10},
+		},
+		{
+			"[download] 100% of 2.91MiB in 00:38\n",
+			ProgressDownload{percentage: 1000},
+		},
+		{
+			"[ffmpeg] Destination: gaburyu - エンパスィー _ 可不-Ss-ba-g82-0.mp3\n",
+			ProgressFFMPEGDestination{destination: "gaburyu - エンパスィー _ 可不-Ss-ba-g82-0.mp3"},
+		},
+		{
+			"Deleting original file gaburyu - エンパスィー _ 可不-Ss-ba-g82-0.webm (pass -k to keep)\n",
+			ProgressFFMPEGDelete{},
+		},
+	}
+
+	for _, test := range tests {
+		result, err := parseLine(test.Input)
+		assert.Nil(t, err)
+		assert.Equal(t, result, test.Expect)
+	}
+}
+
+func TestParseStream(t *testing.T) {
 	testInput, err := os.Open("./test.txt")
 	assert.Nil(t, err)
 	defer testInput.Close()
