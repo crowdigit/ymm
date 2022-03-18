@@ -8,3 +8,21 @@ type YoutubeDL interface {
 	VideoMetadata(url string) VideoMetadata
 	Download(url VideoMetadata)
 }
+
+type YoutubeDLImpl struct{}
+
+func NewYoutubeDLImpl() YoutubeDL {
+	return YoutubeDLImpl{}
+}
+
+func (ydl YoutubeDLImpl) PlaylistMetadata(url string) []VideoMetadata {
+	panic("not implemented") // TODO: Implement
+}
+
+func (ydl YoutubeDLImpl) VideoMetadata(url string) VideoMetadata {
+	panic("not implemented") // TODO: Implement
+}
+
+func (ydl YoutubeDLImpl) Download(url VideoMetadata) {
+	panic("not implemented") // TODO: Implement
+}
