@@ -46,6 +46,34 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	s.Nil(app.DownloadSingle(url))
 }
 
+func (s *AppTestSuite) TestDownloadPlaylist() {
+	url := "http://asdf.com/some/url"
+
+	metadata := []ydl.VideoMetadata{
+		{}, {}, {},
+	}
+	results := []ydl.DownloadResult{
+		{}, {}, {},
+	}
+	s.Equal(len(metadata), len(results))
+
+	order := make([]*gomock.Call, 0, len(metadata)+1)
+	order = append(order, s.mockYdl.EXPECT().PlaylistMetadata(url).
+		DoAndReturn(func(url string) ([]ydl.VideoMetadata, error) {
+			return metadata, nil
+		}))
+	for i := 0; i < len(metadata); i += 1 {
+		order = append(order, s.mockYdl.EXPECT().Download(metadata[0]).
+			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
+				return results[0], nil
+			}))
+	}
+	gomock.InOrder(order...)
+
+	app := app.NewApplicationImpl(s.mockYdl)
+	s.Nil(app.DownloadPlaylist(url))
+}
+
 func TestAppTestSuite(t *testing.T) {
 	suite.Run(t, new(AppTestSuite))
 }
