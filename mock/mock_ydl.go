@@ -35,9 +35,11 @@ func (m *MockYoutubeDL) EXPECT() *MockYoutubeDLMockRecorder {
 }
 
 // Download mocks base method.
-func (m *MockYoutubeDL) Download(arg0 ydl.VideoMetadata) {
+func (m *MockYoutubeDL) Download(arg0 ydl.VideoMetadata) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Download", arg0)
+	ret := m.ctrl.Call(m, "Download", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Download indicates an expected call of Download.
@@ -47,11 +49,12 @@ func (mr *MockYoutubeDLMockRecorder) Download(arg0 interface{}) *gomock.Call {
 }
 
 // PlaylistMetadata mocks base method.
-func (m *MockYoutubeDL) PlaylistMetadata(arg0 string) []ydl.VideoMetadata {
+func (m *MockYoutubeDL) PlaylistMetadata(arg0 string) ([]ydl.VideoMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PlaylistMetadata", arg0)
 	ret0, _ := ret[0].([]ydl.VideoMetadata)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PlaylistMetadata indicates an expected call of PlaylistMetadata.
@@ -61,11 +64,12 @@ func (mr *MockYoutubeDLMockRecorder) PlaylistMetadata(arg0 interface{}) *gomock.
 }
 
 // VideoMetadata mocks base method.
-func (m *MockYoutubeDL) VideoMetadata(arg0 string) ydl.VideoMetadata {
+func (m *MockYoutubeDL) VideoMetadata(arg0 string) (ydl.VideoMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VideoMetadata", arg0)
 	ret0, _ := ret[0].(ydl.VideoMetadata)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // VideoMetadata indicates an expected call of VideoMetadata.

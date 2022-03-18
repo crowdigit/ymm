@@ -34,9 +34,11 @@ func (m *MockApplication) EXPECT() *MockApplicationMockRecorder {
 }
 
 // DownloadPlaylist mocks base method.
-func (m *MockApplication) DownloadPlaylist(arg0 string) {
+func (m *MockApplication) DownloadPlaylist(arg0 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DownloadPlaylist", arg0)
+	ret := m.ctrl.Call(m, "DownloadPlaylist", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // DownloadPlaylist indicates an expected call of DownloadPlaylist.
@@ -46,9 +48,11 @@ func (mr *MockApplicationMockRecorder) DownloadPlaylist(arg0 interface{}) *gomoc
 }
 
 // DownloadSingle mocks base method.
-func (m *MockApplication) DownloadSingle(arg0 string) {
+func (m *MockApplication) DownloadSingle(arg0 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DownloadSingle", arg0)
+	ret := m.ctrl.Call(m, "DownloadSingle", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // DownloadSingle indicates an expected call of DownloadSingle.
