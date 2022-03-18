@@ -35,11 +35,12 @@ func (m *MockYoutubeDL) EXPECT() *MockYoutubeDLMockRecorder {
 }
 
 // Download mocks base method.
-func (m *MockYoutubeDL) Download(arg0 ydl.VideoMetadata) error {
+func (m *MockYoutubeDL) Download(arg0 ydl.VideoMetadata) (ydl.DownloadResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Download", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(ydl.DownloadResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Download indicates an expected call of Download.
