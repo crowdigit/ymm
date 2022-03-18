@@ -4,8 +4,8 @@ import "github.com/crowdigit/ymm/ydl"
 
 //go:generate mockgen -destination=../mock/mock_app.go -package=mock github.com/crowdigit/ymm/app Application
 type Application interface {
-	DownloadPlaylist(url string)
-	DownloadSingle(url string)
+	DownloadPlaylist(url string) error
+	DownloadSingle(url string) error
 }
 
 type ApplicationImpl struct {
@@ -16,10 +16,10 @@ func NewApplicationImpl(ydl ydl.YoutubeDL) Application {
 	return ApplicationImpl{}
 }
 
-func (app ApplicationImpl) DownloadPlaylist(url string) {
+func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	panic("not implemented") // TODO: Implement
 }
 
-func (app ApplicationImpl) DownloadSingle(url string) {
+func (app ApplicationImpl) DownloadSingle(url string) error {
 	panic("not implemented") // TODO: Implement
 }
