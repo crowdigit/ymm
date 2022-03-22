@@ -45,6 +45,6 @@ type VideoMetadata struct {
 	UploaderID  string      `json:"uploader_id"`
 	UploaderURL string      `json:"uploader_url"`
 	UploadDate  *JSONTime   `json:"upload_date"`
-	Filename    string      `json:"filename"`
+	Filename    string      `json:"_filename"`
 	Duration    int         `json:"duration"`
 }
