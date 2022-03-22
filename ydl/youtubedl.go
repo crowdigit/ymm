@@ -96,6 +96,8 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 		json = append(json, chunk...)
 	}
 
+	wg.Wait()
+
 	status, err := command.Wait()
 	if err != nil {
 		return VideoMetadata{}, errors.Wrap(err, "failed to wait for metadata command")
@@ -104,8 +106,6 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	if status != 0 {
 		return VideoMetadata{}, fmt.Errorf("metadata command exited with %d", status)
 	}
-
-	wg.Wait()
 
 	result := VideoMetadata{}
 	if err := jsoniter.Unmarshal(json, &result); err != nil {
