@@ -29,7 +29,6 @@ func (s *AppTestSuite) TearDownTest() {
 
 func (s *AppTestSuite) TestDownloadSingle() {
 	url := "http://asdf.com/some/url"
-	metadataUploadDate := ydl.JSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC))
 	metadata := ydl.VideoMetadata{
 		ID:      "some_id",
 		Title:   "some title",
@@ -44,7 +43,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		Uploader:    "some uploader",
 		UploaderID:  "some_uploader",
 		UploaderURL: "some_uploader_url",
-		UploadDate:  &metadataUploadDate,
+		UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC)),
 		Filename:    "some_filename",
 		Duration:    123,
 	}
