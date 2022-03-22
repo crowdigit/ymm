@@ -10,12 +10,12 @@ type YoutubeDL interface {
 }
 
 type YoutubeDLImpl struct {
-	command Command
+	commandProvider CommandProvider
 }
 
-func NewYoutubeDLImpl(command Command) YoutubeDL {
+func NewYoutubeDLImpl(command CommandProvider) YoutubeDL {
 	return YoutubeDLImpl{
-		command: command,
+		commandProvider: command,
 	}
 }
 
