@@ -35,17 +35,22 @@ func (m *MockCommand) EXPECT() *MockCommandMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockCommand) Start() error {
+func (m *MockCommand) Start(arg0 string, arg1 ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start")
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Start", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockCommandMockRecorder) Start() *gomock.Call {
+func (mr *MockCommandMockRecorder) Start(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockCommand)(nil).Start))
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockCommand)(nil).Start), varargs...)
 }
 
 // StderrPipe mocks base method.
@@ -79,11 +84,12 @@ func (mr *MockCommandMockRecorder) StdoutPipe() *gomock.Call {
 }
 
 // Wait mocks base method.
-func (m *MockCommand) Wait() error {
+func (m *MockCommand) Wait() (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Wait")
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Wait indicates an expected call of Wait.
