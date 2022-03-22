@@ -19,6 +19,11 @@ type Format struct {
 
 type JSONTime time.Time
 
+func NewJSONTime(input time.Time) *JSONTime {
+	output := JSONTime(input)
+	return &output
+}
+
 func (f *JSONTime) UnmarshalJSON(input []byte) error {
 	var inputRawStr string
 	if err := jsoniter.Unmarshal(input, &inputRawStr); err != nil {
