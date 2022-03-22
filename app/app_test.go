@@ -117,7 +117,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			return metadata, nil
 		}))
 	for i := 0; i < len(metadata); i += 1 {
-		order = append(order, s.mockYdl.EXPECT().Download(metadata[0]).
+		order = append(order, s.mockYdl.EXPECT().Download(metadata[i]).
 			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
 				return results[0], nil
 			}))
