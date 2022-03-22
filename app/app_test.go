@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/crowdigit/ymm/app"
 	"github.com/crowdigit/ymm/mock"
@@ -28,7 +29,25 @@ func (s *AppTestSuite) TearDownTest() {
 
 func (s *AppTestSuite) TestDownloadSingle() {
 	url := "http://asdf.com/some/url"
-	metadata := ydl.VideoMetadata{}
+	metadataUploadDate := ydl.JSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC))
+	metadata := ydl.VideoMetadata{
+		ID:      "some_id",
+		Title:   "some title",
+		Formats: []ydl.Format{{FormatID: "251"}},
+		Thumbnails: []ydl.Thumbnail{{
+			URL:    "some url",
+			ID:     "1",
+			Height: 1080,
+			Width:  1920,
+		}},
+		Description: "some description",
+		Uploader:    "some uploader",
+		UploaderID:  "some_uploader",
+		UploaderURL: "some_uploader_url",
+		UploadDate:  &metadataUploadDate,
+		Filename:    "some_filename",
+		Duration:    123,
+	}
 	result := ydl.DownloadResult{}
 
 	s.mockYdl.EXPECT().VideoMetadata(url).
@@ -50,10 +69,45 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	url := "http://asdf.com/some/url"
 
 	metadata := []ydl.VideoMetadata{
-		{}, {}, {},
+		{
+			ID:      "some_id_0",
+			Title:   "some title 0",
+			Formats: []ydl.Format{{FormatID: "251"}},
+			Thumbnails: []ydl.Thumbnail{{
+				URL:    "some url",
+				ID:     "1",
+				Height: 1080,
+				Width:  1920,
+			}},
+			Description: "some description 0",
+			Uploader:    "some uploader 0",
+			UploaderID:  "some_uploader 0",
+			UploaderURL: "some_uploader_url_0",
+			UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC)),
+			Filename:    "some_filename_0",
+			Duration:    123,
+		},
+		{
+			ID:      "some_id_1",
+			Title:   "some title 1",
+			Formats: []ydl.Format{{FormatID: "251"}},
+			Thumbnails: []ydl.Thumbnail{{
+				URL:    "some url",
+				ID:     "1",
+				Height: 1080,
+				Width:  1920,
+			}},
+			Description: "some description 1",
+			Uploader:    "some uploader 1",
+			UploaderID:  "some_uploader 1",
+			UploaderURL: "some_uploader_url_1",
+			UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC)),
+			Filename:    "some_filename_1",
+			Duration:    124,
+		},
 	}
 	results := []ydl.DownloadResult{
-		{}, {}, {},
+		{}, {},
 	}
 	s.Equal(len(metadata), len(results))
 
