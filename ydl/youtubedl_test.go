@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/crowdigit/ymm/mock"
+	"github.com/crowdigit/ymm/ydl"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 )
@@ -28,6 +29,11 @@ func (s *YoutubeDLTestSuite) TestPlaylistMetadata() {
 }
 
 func (s *YoutubeDLTestSuite) TestVideoMetadata() {
+	url := "http://asdf.com/some/url"
+	s.mockCommand.EXPECT().Start("youtube-dl", "--dump-json", url).Times(1)
+	s.mockCommand.EXPECT().Wait().Times(1)
+
+	ydl.NewYoutubeDLImpl(s.mockCommand)
 }
 
 func (s *YoutubeDLTestSuite) TestDownload() {

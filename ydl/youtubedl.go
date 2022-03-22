@@ -9,10 +9,14 @@ type YoutubeDL interface {
 	Download(url VideoMetadata) (DownloadResult, error)
 }
 
-type YoutubeDLImpl struct{}
+type YoutubeDLImpl struct {
+	command Command
+}
 
-func NewYoutubeDLImpl() YoutubeDL {
-	return YoutubeDLImpl{}
+func NewYoutubeDLImpl(command Command) YoutubeDL {
+	return YoutubeDLImpl{
+		command: command,
+	}
 }
 
 func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([]VideoMetadata, error) {
