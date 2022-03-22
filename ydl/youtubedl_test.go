@@ -46,10 +46,10 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 			command := mock.NewMockCommand(s.mockCtrl)
 			command.EXPECT().Start().Times(1)
 			command.EXPECT().StderrPipe().
-				Return(bytes.NewReader(nil)).
+				Return(io.NopCloser(bytes.NewReader(nil)), nil).
 				Times(1)
 			command.EXPECT().StdoutPipe().
-				Return(bytes.NewReader(testOutput)).
+				Return(io.NopCloser(bytes.NewReader(testOutput)), nil).
 				Times(1)
 			command.EXPECT().Wait().Times(1)
 			return command
