@@ -15,7 +15,7 @@ type DownloadResult struct{}
 type YoutubeDL interface {
 	PlaylistMetadata(url string) ([]VideoMetadata, error)
 	VideoMetadata(url string) (VideoMetadata, error)
-	Download(url VideoMetadata) (DownloadResult, error)
+	Download(metadata VideoMetadata) (DownloadResult, error)
 }
 
 type YoutubeDLImpl struct {
@@ -115,6 +115,6 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	return result, nil
 }
 
-func (ydl YoutubeDLImpl) Download(url VideoMetadata) (DownloadResult, error) {
+func (ydl YoutubeDLImpl) Download(metadata VideoMetadata) (DownloadResult, error) {
 	panic("not implemented") // TODO: Implement
 }
