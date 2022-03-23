@@ -37,6 +37,7 @@ var commonTestMetadata = ydl.VideoMetadata{
 	UploaderID:  "UC-V8o6aa9C133RYMtaobq6w",
 	UploaderURL: "http://www.youtube.com/channel/UC-V8o6aa9C133RYMtaobq6w",
 	UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC)),
+	WebpageURL:  "https://www.youtube.com/watch?v=Ss-ba-g82-0",
 	Filename:    "gaburyu - エンパスィー _可不-Ss-ba-g82-0.mp4",
 	Duration:    174,
 }
