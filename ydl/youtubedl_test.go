@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/crowdigit/ymm/mock"
 	"github.com/crowdigit/ymm/ydl"
@@ -56,16 +57,66 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 		}).
 		Times(1)
 
-	ydl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
-	got, err := ydl.VideoMetadata(url)
+	youtubeDl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
+	got, err := youtubeDl.VideoMetadata(url)
 	s.Nil(err)
 
-	expect := commonTestMetadata
-	s.Equal(expect, got)
+	expected := commonTestMetadata
+	s.Equal(expected, got)
 }
 
 func (s *YoutubeDLTestSuite) TestDownload() {
-	// TODO
+	metadata := ydl.VideoMetadata{
+		ID:      "456",
+		Title:   "some title",
+		Formats: []ydl.Format{{FormatID: "251"}},
+		Thumbnails: []ydl.Thumbnail{
+			{
+				URL:    "http://asdf.com/thunbnail/456.png",
+				ID:     "1",
+				Height: 1080,
+				Width:  1920,
+			},
+		},
+		Description: "some description",
+		Uploader:    "some uploader",
+		UploaderID:  "123",
+		UploaderURL: "http://asdf.com/some/uploader/123",
+		UploadDate:  ydl.NewJSONTime(time.Date(2022, time.March, 1, 1, 0, 0, 0, time.UTC)),
+		WebpageURL:  "http://asdf.com/some/url/456",
+		Filename:    "somefilename.mp3",
+		Duration:    0,
+	}
+
+	s.mockCommandProvider.EXPECT().
+		NewCommand(
+			"youtube-dl",
+			"--format", "251",
+			"--extract-audio",
+			"--audio-format", "mp3",
+			"--audio-quality", "0",
+			metadata.WebpageURL,
+		).
+		DoAndReturn(func(name string, args ...string) ydl.Command {
+			command := mock.NewMockCommand(s.mockCtrl)
+			command.EXPECT().Start().Times(1)
+			command.EXPECT().StderrPipe().
+				Return(io.NopCloser(bytes.NewReader(nil)), nil).
+				Times(1)
+			command.EXPECT().StdoutPipe().
+				Return(io.NopCloser(bytes.NewReader(nil)), nil).
+				Times(1)
+			command.EXPECT().Wait().Times(1)
+			return command
+		}).
+		Times(1)
+
+	youtubeDl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
+	got, err := youtubeDl.Download(metadata)
+	s.Nil(err)
+
+	expected := ydl.DownloadResult{}
+	s.Equal(expected, got)
 }
 
 func TestYoutubeDLTestSuite(t *testing.T) {
