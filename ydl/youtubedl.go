@@ -28,6 +28,15 @@ func NewYoutubeDLImpl(command CommandProvider) YoutubeDL {
 	}
 }
 
+func contains251Format(formats []Format) bool {
+	for _, format := range formats {
+		if format.FormatID == "251" {
+			return true
+		}
+	}
+	return false
+}
+
 func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([]VideoMetadata, error) {
 	panic("not implemented") // TODO: Implement
 }
@@ -97,7 +106,7 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 
 	chClose := make(chan struct{})
 	chJson := make(chan []byte)
-	go handleMetadataStream(chStdout, chJson, chClose)
+	go handleMetadataStream(chStdout, chStderr, chJson, chClose, chErr)
 
 	wg.Wait()
 
@@ -121,6 +130,74 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	return result, nil
 }
 
+func handleDownloadStream(chStdout <-chan []byte, chStderr <-chan []byte, chClose chan struct{}, chErr <-chan error) {
+loop:
+	for {
+		select {
+		case <-chErr:
+			// TODO
+			break loop
+		case <-chStderr:
+			// TODO
+		case <-chStdout:
+			// TODO
+		case <-chClose:
+			break loop
+		}
+	}
+}
+
 func (ydl YoutubeDLImpl) Download(metadata VideoMetadata) (DownloadResult, error) {
-	panic("not implemented") // TODO: Implement
+	if !contains251Format(metadata.Formats) {
+		return DownloadResult{}, fmt.Errorf("video %s does not contain format 251", metadata.ID)
+	}
+
+	command := ydl.commandProvider.NewCommand(
+		"youtube-dl",
+		"--format", "251",
+		"--extract-audio",
+		"--audio-format", "mp3",
+		"--audio-quality", "0",
+		metadata.WebpageURL)
+
+	stderr, err := command.StderrPipe()
+	if err != nil {
+		return DownloadResult{}, errors.Wrap(err, "failed to get stderr pipe")
+	}
+
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return DownloadResult{}, errors.Wrap(err, "failed to get stdout pipe")
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	chStderr := make(chan []byte)
+	chStdout := make(chan []byte)
+	chErr := make(chan error)
+	go readStream(&wg, stderr, chStderr, chErr)
+	go readStream(&wg, stdout, chStdout, chErr)
+
+	if err := command.Start(); err != nil {
+		return DownloadResult{}, errors.Wrap(err, "failed to start download command")
+	}
+
+	chClose := make(chan struct{})
+	go handleDownloadStream(chStdout, chStderr, chClose, chErr)
+
+	wg.Wait()
+
+	close(chClose)
+
+	status, err := command.Wait()
+	if err != nil {
+		return DownloadResult{}, errors.Wrap(err, "failed to wait for download command")
+	}
+
+	if status != 0 {
+		return DownloadResult{}, fmt.Errorf("download command exited with %d", status)
+	}
+
+	return DownloadResult{}, nil
 }
