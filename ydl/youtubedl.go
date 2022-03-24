@@ -32,6 +32,38 @@ func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([]VideoMetadata, error) {
 	panic("not implemented") // TODO: Implement
 }
 
+func readStream(wg *sync.WaitGroup, reader io.ReadCloser, chOut chan<- []byte, chErr chan<- error) {
+	defer wg.Done()
+	readBuffer := make([]byte, 1024)
+	for {
+		read, err := reader.Read(readBuffer)
+		if read > 0 {
+			sendBuffer := make([]byte, read)
+			copy(sendBuffer, readBuffer)
+			chOut <- sendBuffer
+		} else if err == io.EOF {
+			break
+		} else if err != nil {
+			chErr <- errors.Wrap(err, "failed to read from reader stream")
+			break
+		}
+	}
+}
+
+func handleMetadataStream(chStream <-chan []byte, chJson chan<- []byte, chClose chan struct{}) {
+	json := make([]byte, 0, 8192)
+loop:
+	for {
+		select {
+		case jsonChunk := <-chStream:
+			json = append(json, jsonChunk...)
+		case <-chClose:
+			break loop
+		}
+	}
+	chJson <- json
+}
+
 func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	command := ydl.commandProvider.NewCommand("youtube-dl", "--dump-json", url)
 
@@ -48,55 +80,24 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	go func() {
-		buffer := make([]byte, 1024)
-		for {
-			read, err := stderr.Read(buffer)
-			if read > 0 {
-				// TODO log error
-			} else if err == io.EOF {
-				break
-			} else if err != nil {
-				// TODO log error
-				// TODO return error
-				break
-			}
-		}
-		wg.Done()
-	}()
-
-	chChunk := make(chan []byte)
-
-	go func() {
-		buffer := make([]byte, 1024)
-		for {
-			read, err := stdout.Read(buffer)
-			if read > 0 {
-				sendbuffer := make([]byte, read)
-				copy(sendbuffer, buffer)
-				chChunk <- sendbuffer
-			} else if err == io.EOF {
-				break
-			} else if err != nil {
-				// TODO log error
-				// TODO return error
-				break
-			}
-		}
-		close(chChunk)
-		wg.Done()
-	}()
+	chStderr := make(chan []byte)
+	chStdout := make(chan []byte)
+	chErr := make(chan error)
+	go readStream(&wg, stderr, chStderr, chErr)
+	go readStream(&wg, stdout, chStdout, chErr)
 
 	if err := command.Start(); err != nil {
 		return VideoMetadata{}, errors.Wrap(err, "failed to start metadata command")
 	}
 
-	json := make([]byte, 0, 8192)
-	for chunk := range chChunk {
-		json = append(json, chunk...)
-	}
+	chClose := make(chan struct{})
+	chJson := make(chan []byte)
+	go handleMetadataStream(chStdout, chJson, chClose)
 
 	wg.Wait()
+
+	close(chClose)
+	json := <-chJson
 
 	status, err := command.Wait()
 	if err != nil {
