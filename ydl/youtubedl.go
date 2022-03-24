@@ -50,12 +50,17 @@ func readStream(wg *sync.WaitGroup, reader io.ReadCloser, chOut chan<- []byte, c
 	}
 }
 
-func handleMetadataStream(chStream <-chan []byte, chJson chan<- []byte, chClose chan struct{}) {
+func handleMetadataStream(chStdout <-chan []byte, chStderr <-chan []byte, chJson chan<- []byte, chClose chan struct{}, chErr <-chan error) {
 	json := make([]byte, 0, 8192)
 loop:
 	for {
 		select {
-		case jsonChunk := <-chStream:
+		case <-chErr:
+			// TODO
+			break loop
+		case <-chStderr:
+			// TODO
+		case jsonChunk := <-chStdout:
 			json = append(json, jsonChunk...)
 		case <-chClose:
 			break loop
