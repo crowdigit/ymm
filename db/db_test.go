@@ -37,14 +37,13 @@ func (s *DBTestSuite) TearDownTest() {
 func (s *DBTestSuite) TestStoreMetadata() {
 	id := "Ss-ba-g82-0"
 	expectedMap := make(map[string]any)
-	expectedMap["ID"] = id
 	expectedMap["a"] = 123
 	expectedMap["b"] = "asdf"
 	expected, err := jsoniter.Marshal(expectedMap)
 	s.Nil(err)
 
 	db := db.NewDatabaseImpl(s.config)
-	s.Nil(db.StoreMetadata(expected))
+	s.Nil(db.StoreMetadata(id, expected))
 
 	path := filepath.Join(s.config.MetadataDir, fmt.Sprintf("%s.json", id))
 	file, err := os.OpenFile(path, os.O_RDONLY, 0)

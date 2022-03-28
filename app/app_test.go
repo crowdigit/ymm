@@ -59,7 +59,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			return metadataBytes, nil
 		}).
 		Times(1)
-	s.mockDb.EXPECT().StoreMetadata(metadataBytes).
+	s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
 		Return(nil).
 		Times(1)
 	s.mockYdl.EXPECT().Download(metadata).
@@ -129,8 +129,8 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 		DoAndReturn(func(url string) ([][]byte, error) {
 			return metadataBytes, nil
 		}))
-	for _, metadatumBytes := range metadataBytes {
-		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadatumBytes).
+	for i, metadatumBytes := range metadataBytes {
+		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadata[i].ID, metadatumBytes).
 			Return(nil))
 	}
 	for i := 0; i < len(metadata); i += 1 {
