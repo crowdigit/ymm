@@ -7,7 +7,6 @@ package mock
 import (
 	reflect "reflect"
 
-	ydl "github.com/crowdigit/ymm/ydl"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,7 +34,7 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 }
 
 // StoreMetadata mocks base method.
-func (m *MockDatabase) StoreMetadata(arg0 ydl.VideoMetadata) error {
+func (m *MockDatabase) StoreMetadata(arg0 []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreMetadata", arg0)
 	ret0, _ := ret[0].(error)
