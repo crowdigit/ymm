@@ -43,7 +43,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return errors.Wrap(err, "failed to unmarshal video metadata")
 		}
 		metadata = append(metadata, metadatum)
-		if err := app.db.StoreMetadata(metadatumBytes); err != nil {
+		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
 			return errors.Wrap(err, "failed to store video metadata")
 		}
 	}
@@ -72,7 +72,7 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to unmarshal video metadata")
 	}
 
-	if err := app.db.StoreMetadata(metadataBytes); err != nil {
+	if err := app.db.StoreMetadata(metadata.ID, metadataBytes); err != nil {
 		return errors.Wrap(err, "failed to store video metadata")
 	}
 

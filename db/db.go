@@ -2,7 +2,7 @@ package db
 
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
-	StoreMetadata([]byte) error
+	StoreMetadata(id string, metadata []byte) error
 }
 
 type DatabaseConfig struct {
@@ -20,6 +20,6 @@ func NewDatabaseImpl(config DatabaseConfig) *DatabaseImpl {
 	}
 }
 
-func (db *DatabaseImpl) StoreMetadata(metadata []byte) error {
+func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 	panic("not implemented") // TODO: Implement
 }
