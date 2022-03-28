@@ -50,23 +50,25 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		Filename:    "some_filename",
 		Duration:    123,
 	}
+	metadataBytes, err := jsoniter.Marshal(metadata)
+	s.Nil(err)
 	result := ydl.DownloadResult{}
 
 	s.mockYdl.EXPECT().VideoMetadata(url).
 		DoAndReturn(func(url string) ([]byte, error) {
-			metadataBytes, err := jsoniter.Marshal(metadata)
-			s.Nil(err)
 			return metadataBytes, nil
 		}).
 		Times(1)
-	// s.mockDb.EXPECT().StoreMetadata(metadata)
+	s.mockDb.EXPECT().StoreMetadata(metadataBytes).
+		Return(nil).
+		Times(1)
 	s.mockYdl.EXPECT().Download(metadata).
 		DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
 			return result, nil
 		}).
 		Times(1)
 
-	app := app.NewApplicationImpl(s.mockYdl)
+	app := app.NewApplicationImpl(s.mockYdl, s.mockDb)
 	s.Nil(app.DownloadSingle(url))
 }
 
@@ -111,22 +113,26 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			Duration:    124,
 		},
 	}
+	metadataBytes := make([][]byte, 0, len(metadata))
+	for _, metadatum := range metadata {
+		metadatumBytes, err := jsoniter.Marshal(metadatum)
+		s.Nil(err)
+		metadataBytes = append(metadataBytes, metadatumBytes)
+	}
 	results := []ydl.DownloadResult{
 		{}, {},
 	}
 	s.Equal(len(metadata), len(results))
 
-	order := make([]*gomock.Call, 0, len(metadata)+1)
+	order := make([]*gomock.Call, 0, len(metadata)*2+1)
 	order = append(order, s.mockYdl.EXPECT().PlaylistMetadata(url).
 		DoAndReturn(func(url string) ([][]byte, error) {
-			metadataBytes := make([][]byte, 0, len(metadata))
-			for _, metadatum := range metadata {
-				metadatumBytes, err := jsoniter.Marshal(metadatum)
-				s.Nil(err)
-				metadataBytes = append(metadataBytes, metadatumBytes)
-			}
 			return metadataBytes, nil
 		}))
+	for _, metadatumBytes := range metadataBytes {
+		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadatumBytes).
+			Return(nil))
+	}
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(metadata[i]).
 			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
@@ -135,7 +141,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(s.mockYdl)
+	app := app.NewApplicationImpl(s.mockYdl, s.mockDb)
 	s.Nil(app.DownloadPlaylist(url))
 }
 
