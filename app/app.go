@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -14,11 +15,13 @@ type Application interface {
 
 type ApplicationImpl struct {
 	ydl ydl.YoutubeDL
+	db  db.Database
 }
 
-func NewApplicationImpl(ydl ydl.YoutubeDL) Application {
+func NewApplicationImpl(ydl ydl.YoutubeDL, db db.Database) Application {
 	return ApplicationImpl{
 		ydl: ydl,
+		db:  db,
 	}
 }
 
