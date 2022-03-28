@@ -9,13 +9,21 @@ import (
 	"github.com/crowdigit/ymm/app"
 	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/ydl"
+	"go.uber.org/zap"
 )
 
 func main() {
+	loggerP, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("failed to initialize logger: %s", err)
+	}
+	defer loggerP.Sync()
+	logger := loggerP.Sugar()
+
 	url := "https://www.youtube.com/watch?v=Ss-ba-g82-0"
 
 	commandProvider := ydl.NewCommandProviderImpl()
-	youtubeDl := ydl.NewYoutubeDLImpl(commandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
 
 	metadataDir := filepath.Join(xdg.DataHome, "ymm", "metadata")
 	if err := os.MkdirAll(metadataDir, 0755); err != nil {
@@ -32,7 +40,8 @@ func main() {
 		MetadataDir:  metadataDir,
 	})
 
-	app := app.NewApplicationImpl(youtubeDl, db)
+	app := app.NewApplicationImpl(logger, youtubeDl, db)
+	logger.Info("initialized application")
 	if err := app.DownloadSingle(url); err != nil {
 		log.Fatalf("%s", err)
 	}

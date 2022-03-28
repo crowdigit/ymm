@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type DownloadResult struct{}
@@ -18,11 +19,13 @@ type YoutubeDL interface {
 }
 
 type YoutubeDLImpl struct {
+	logger          *zap.SugaredLogger
 	commandProvider CommandProvider
 }
 
-func NewYoutubeDLImpl(command CommandProvider) YoutubeDL {
+func NewYoutubeDLImpl(logger *zap.SugaredLogger, command CommandProvider) YoutubeDL {
 	return YoutubeDLImpl{
+		logger:          logger,
 		commandProvider: command,
 	}
 }
@@ -124,17 +127,17 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
 	return json, nil
 }
 
-func handleDownloadStream(chStdout <-chan []byte, chStderr <-chan []byte, chClose chan struct{}, chErr <-chan error) {
+func handleDownloadStream(logger *zap.SugaredLogger, chStdout <-chan []byte, chStderr <-chan []byte, chClose chan struct{}, chErr <-chan error) {
 loop:
 	for {
 		select {
-		case <-chErr:
-			// TODO
+		case err := <-chErr:
+			logger.Errorf("reading from download stream returned an error: %s", err)
 			break loop
-		case <-chStderr:
-			// TODO
-		case <-chStdout:
-			// TODO
+		case msg := <-chStderr:
+			logger.Warnf(string(msg))
+		case msg := <-chStdout:
+			logger.Infof(string(msg))
 		case <-chClose:
 			break loop
 		}
@@ -178,7 +181,7 @@ func (ydl YoutubeDLImpl) Download(metadata VideoMetadata) (DownloadResult, error
 	}
 
 	chClose := make(chan struct{})
-	go handleDownloadStream(chStdout, chStderr, chClose, chErr)
+	go handleDownloadStream(ydl.logger, chStdout, chStderr, chClose, chErr)
 
 	wg.Wait()
 

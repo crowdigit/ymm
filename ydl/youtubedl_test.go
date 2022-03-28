@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
 )
 
 type YoutubeDLTestSuite struct {
@@ -58,7 +59,7 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 		}).
 		Times(1)
 
-	youtubeDl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
 	result, err := youtubeDl.VideoMetadata(url)
 	s.Nil(err)
 
@@ -115,7 +116,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		}).
 		Times(1)
 
-	youtubeDl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
 	got, err := youtubeDl.Download(metadata)
 	s.Nil(err)
 

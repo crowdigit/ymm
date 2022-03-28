@@ -5,6 +5,7 @@ import (
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 //go:generate mockgen -destination=../mock/mock_app.go -package=mock github.com/crowdigit/ymm/app Application
@@ -14,14 +15,16 @@ type Application interface {
 }
 
 type ApplicationImpl struct {
-	ydl ydl.YoutubeDL
-	db  db.Database
+	logger *zap.SugaredLogger
+	ydl    ydl.YoutubeDL
+	db     db.Database
 }
 
-func NewApplicationImpl(ydl ydl.YoutubeDL, db db.Database) Application {
+func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, db db.Database) Application {
 	return ApplicationImpl{
-		ydl: ydl,
-		db:  db,
+		logger: logger,
+		ydl:    ydl,
+		db:     db,
 	}
 }
 

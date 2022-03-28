@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
 )
 
 type AppTestSuite struct {
@@ -68,7 +69,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		}).
 		Times(1)
 
-	app := app.NewApplicationImpl(s.mockYdl, s.mockDb)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb)
 	s.Nil(app.DownloadSingle(url))
 }
 
@@ -141,7 +142,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(s.mockYdl, s.mockDb)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb)
 	s.Nil(app.DownloadPlaylist(url))
 }
 
