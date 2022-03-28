@@ -10,6 +10,7 @@ import (
 	"github.com/crowdigit/ymm/mock"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/golang/mock/gomock"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -58,8 +59,11 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 		Times(1)
 
 	youtubeDl := ydl.NewYoutubeDLImpl(s.mockCommandProvider)
-	got, err := youtubeDl.VideoMetadata(url)
+	result, err := youtubeDl.VideoMetadata(url)
 	s.Nil(err)
+
+	got := ydl.VideoMetadata{}
+	s.Nil(jsoniter.Unmarshal(result, &got))
 
 	expected := commonTestMetadata
 	s.Equal(expected, got)

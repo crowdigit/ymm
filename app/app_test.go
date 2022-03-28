@@ -8,6 +8,7 @@ import (
 	"github.com/crowdigit/ymm/mock"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/golang/mock/gomock"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -16,11 +17,13 @@ type AppTestSuite struct {
 
 	mockCtrl *gomock.Controller
 	mockYdl  *mock.MockYoutubeDL
+	mockDb   *mock.MockDatabase
 }
 
 func (s *AppTestSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockYdl = mock.NewMockYoutubeDL(s.mockCtrl)
+	s.mockDb = mock.NewMockDatabase(s.mockCtrl)
 }
 
 func (s *AppTestSuite) TearDownTest() {
@@ -50,10 +53,13 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	result := ydl.DownloadResult{}
 
 	s.mockYdl.EXPECT().VideoMetadata(url).
-		DoAndReturn(func(url string) (ydl.VideoMetadata, error) {
-			return metadata, nil
+		DoAndReturn(func(url string) ([]byte, error) {
+			metadataBytes, err := jsoniter.Marshal(metadata)
+			s.Nil(err)
+			return metadataBytes, nil
 		}).
 		Times(1)
+	// s.mockDb.EXPECT().StoreMetadata(metadata)
 	s.mockYdl.EXPECT().Download(metadata).
 		DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
 			return result, nil
@@ -112,8 +118,14 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 
 	order := make([]*gomock.Call, 0, len(metadata)+1)
 	order = append(order, s.mockYdl.EXPECT().PlaylistMetadata(url).
-		DoAndReturn(func(url string) ([]ydl.VideoMetadata, error) {
-			return metadata, nil
+		DoAndReturn(func(url string) ([][]byte, error) {
+			metadataBytes := make([][]byte, 0, len(metadata))
+			for _, metadatum := range metadata {
+				metadatumBytes, err := jsoniter.Marshal(metadatum)
+				s.Nil(err)
+				metadataBytes = append(metadataBytes, metadatumBytes)
+			}
+			return metadataBytes, nil
 		}))
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(metadata[i]).

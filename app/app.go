@@ -1,6 +1,8 @@
 package app
 
 import (
+	"encoding/json"
+
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/pkg/errors"
 )
@@ -28,8 +30,12 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	}
 
 	// TODO configurable concurrent downloads
-	for _, metadatum := range metadata {
+	for _, metadatumBytes := range metadata {
 		// TODO retry failed downloads
+		metadatum := ydl.VideoMetadata{}
+		if err := json.Unmarshal(metadatumBytes, &metadatum); err != nil {
+			return err
+		}
 		if _, err := app.ydl.Download(metadatum); err != nil {
 			return err
 		}
@@ -39,9 +45,14 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 }
 
 func (app ApplicationImpl) DownloadSingle(url string) error {
-	metadata, err := app.ydl.VideoMetadata(url)
+	metadataBytes, err := app.ydl.VideoMetadata(url)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch video metadata")
+	}
+
+	metadata := ydl.VideoMetadata{}
+	if err := json.Unmarshal(metadataBytes, &metadata); err != nil {
+		return err
 	}
 
 	_, err = app.ydl.Download(metadata)
