@@ -50,10 +50,10 @@ func (mr *MockYoutubeDLMockRecorder) Download(arg0 interface{}) *gomock.Call {
 }
 
 // PlaylistMetadata mocks base method.
-func (m *MockYoutubeDL) PlaylistMetadata(arg0 string) ([]ydl.VideoMetadata, error) {
+func (m *MockYoutubeDL) PlaylistMetadata(arg0 string) ([][]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PlaylistMetadata", arg0)
-	ret0, _ := ret[0].([]ydl.VideoMetadata)
+	ret0, _ := ret[0].([][]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,10 +65,10 @@ func (mr *MockYoutubeDLMockRecorder) PlaylistMetadata(arg0 interface{}) *gomock.
 }
 
 // VideoMetadata mocks base method.
-func (m *MockYoutubeDL) VideoMetadata(arg0 string) (ydl.VideoMetadata, error) {
+func (m *MockYoutubeDL) VideoMetadata(arg0 string) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VideoMetadata", arg0)
-	ret0, _ := ret[0].(ydl.VideoMetadata)
+	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

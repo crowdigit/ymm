@@ -5,7 +5,6 @@ import (
 	"io"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 )
 
@@ -13,8 +12,8 @@ type DownloadResult struct{}
 
 //go:generate mockgen -destination=../mock/mock_ydl.go -package=mock github.com/crowdigit/ymm/ydl YoutubeDL
 type YoutubeDL interface {
-	PlaylistMetadata(url string) ([]VideoMetadata, error)
-	VideoMetadata(url string) (VideoMetadata, error)
+	PlaylistMetadata(url string) ([][]byte, error)
+	VideoMetadata(url string) ([]byte, error)
 	Download(metadata VideoMetadata) (DownloadResult, error)
 }
 
@@ -37,7 +36,7 @@ func contains251Format(formats []Format) bool {
 	return false
 }
 
-func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([]VideoMetadata, error) {
+func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([][]byte, error) {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -78,17 +77,17 @@ loop:
 	chJson <- json
 }
 
-func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
+func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
 	command := ydl.commandProvider.NewCommand("youtube-dl", "--dump-json", url)
 
 	stderr, err := command.StderrPipe()
 	if err != nil {
-		return VideoMetadata{}, errors.Wrap(err, "failed to get stderr pipe")
+		return nil, errors.Wrap(err, "failed to get stderr pipe")
 	}
 
 	stdout, err := command.StdoutPipe()
 	if err != nil {
-		return VideoMetadata{}, errors.Wrap(err, "failed to get stdout pipe")
+		return nil, errors.Wrap(err, "failed to get stdout pipe")
 	}
 
 	wg := sync.WaitGroup{}
@@ -101,7 +100,7 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 	go readStream(&wg, stdout, chStdout, chErr)
 
 	if err := command.Start(); err != nil {
-		return VideoMetadata{}, errors.Wrap(err, "failed to start metadata command")
+		return nil, errors.Wrap(err, "failed to start metadata command")
 	}
 
 	chClose := make(chan struct{})
@@ -115,19 +114,14 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) (VideoMetadata, error) {
 
 	status, err := command.Wait()
 	if err != nil {
-		return VideoMetadata{}, errors.Wrap(err, "failed to wait for metadata command")
+		return nil, errors.Wrap(err, "failed to wait for metadata command")
 	}
 
 	if status != 0 {
-		return VideoMetadata{}, fmt.Errorf("metadata command exited with %d", status)
+		return nil, fmt.Errorf("metadata command exited with %d", status)
 	}
 
-	result := VideoMetadata{}
-	if err := jsoniter.Unmarshal(json, &result); err != nil {
-		return VideoMetadata{}, errors.Wrap(err, "failed to unmarshal bytes from stdout")
-	}
-
-	return result, nil
+	return json, nil
 }
 
 func handleDownloadStream(chStdout <-chan []byte, chStderr <-chan []byte, chClose chan struct{}, chErr <-chan error) {
