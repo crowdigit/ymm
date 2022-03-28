@@ -1,6 +1,7 @@
 package ydl
 
 import (
+	"fmt"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -38,6 +39,11 @@ func (f *JSONTime) UnmarshalJSON(input []byte) error {
 	*f = JSONTime(t)
 
 	return nil
+}
+
+func (f *JSONTime) MarshalJSON() ([]byte, error) {
+	str := fmt.Sprintf("%q", (*time.Time)(f).Format("20060102"))
+	return []byte(str), nil
 }
 
 type VideoMetadata struct {

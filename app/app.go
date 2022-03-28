@@ -1,9 +1,8 @@
 package app
 
 import (
-	"encoding/json"
-
 	"github.com/crowdigit/ymm/ydl"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +32,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	for _, metadatumBytes := range metadata {
 		// TODO retry failed downloads
 		metadatum := ydl.VideoMetadata{}
-		if err := json.Unmarshal(metadatumBytes, &metadatum); err != nil {
+		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
 			return err
 		}
 		if _, err := app.ydl.Download(metadatum); err != nil {
@@ -51,7 +50,7 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 	}
 
 	metadata := ydl.VideoMetadata{}
-	if err := json.Unmarshal(metadataBytes, &metadata); err != nil {
+	if err := jsoniter.Unmarshal(metadataBytes, &metadata); err != nil {
 		return err
 	}
 
