@@ -28,6 +28,7 @@ func (s *DBTestSuite) SetupTest() {
 		DatabaseFile: filepath.Join(s.dataDir, "db.sql"),
 		MetadataDir:  filepath.Join(s.dataDir, "metadata"),
 	}
+	s.Nil(os.Mkdir(s.config.MetadataDir, 0755))
 }
 
 func (s *DBTestSuite) TearDownTest() {
