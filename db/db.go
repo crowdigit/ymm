@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
-	"github.com/uptrace/bun/driver/sqliteshim"
 )
 
 type Uploader struct {
@@ -38,12 +37,10 @@ type Database interface {
 	StoreMetadata(id string, metadata []byte) error
 	SetUploader(SetUploaderQueryBuilder) error
 	GetUploader(GetUploaderQueryBuilder) ([]Uploader, error)
-	Close()
 }
 
 type DatabaseConfig struct {
-	DatabaseFile string
-	MetadataDir  string
+	MetadataDir string
 }
 
 type DatabaseImpl struct {
@@ -51,12 +48,7 @@ type DatabaseImpl struct {
 	bundb  *bun.DB
 }
 
-func NewDatabaseImpl(config DatabaseConfig) (*DatabaseImpl, error) {
-	sqldb, err := sql.Open(sqliteshim.ShimName, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to open sqlite DB")
-	}
-
+func NewDatabaseImpl(config DatabaseConfig, sqldb *sql.DB) (*DatabaseImpl, error) {
 	bundb := bun.NewDB(sqldb, sqlitedialect.New())
 
 	return &DatabaseImpl{
@@ -87,8 +79,4 @@ func (db *DatabaseImpl) SetUploader(query SetUploaderQueryBuilder) error {
 
 func (db *DatabaseImpl) GetUploader(query GetUploaderQueryBuilder) ([]Uploader, error) {
 	panic("not implemented") // TODO: Implement
-}
-
-func (db *DatabaseImpl) Close() {
-	db.bundb.Close()
 }

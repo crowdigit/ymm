@@ -1,12 +1,14 @@
 package db_test
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/crowdigit/ymm/db"
 	"github.com/golang/mock/gomock"
 	jsoniter "github.com/json-iterator/go"
@@ -17,16 +19,20 @@ type DBTestSuite struct {
 	suite.Suite
 
 	mockCtrl *gomock.Controller
+	mockSql  sqlmock.Sqlmock
+	mockDb   *sql.DB
 	dataDir  string
 	config   db.DatabaseConfig
 }
 
 func (s *DBTestSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
+	mockDb, mockSql, err := sqlmock.New()
+	s.Nil(err)
+	s.mockDb, s.mockSql = mockDb, mockSql
 	s.dataDir = s.T().TempDir()
 	s.config = db.DatabaseConfig{
-		DatabaseFile: filepath.Join(s.dataDir, "db.sql"),
-		MetadataDir:  filepath.Join(s.dataDir, "metadata"),
+		MetadataDir: filepath.Join(s.dataDir, "metadata"),
 	}
 	s.Nil(os.Mkdir(s.config.MetadataDir, 0755))
 }
@@ -43,7 +49,7 @@ func (s *DBTestSuite) TestStoreMetadata() {
 	expected, err := jsoniter.Marshal(expectedMap)
 	s.Nil(err)
 
-	db, err := db.NewDatabaseImpl(s.config)
+	db, err := db.NewDatabaseImpl(s.config, s.mockDb)
 	s.Nil(err)
 	s.Nil(db.StoreMetadata(id, expected))
 

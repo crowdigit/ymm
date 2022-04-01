@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"github.com/crowdigit/ymm/app"
 	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/ydl"
+	"github.com/uptrace/bun/driver/sqliteshim"
 	"go.uber.org/zap"
 )
 
@@ -35,14 +37,16 @@ func main() {
 		log.Fatalf("failed to create data directory: %s", err)
 	}
 
-	db, err := db.NewDatabaseImpl(db.DatabaseConfig{
-		DatabaseFile: databaseFile,
-		MetadataDir:  metadataDir,
-	})
+	sqldb, err := sql.Open(sqliteshim.ShimName, databaseFile)
+	if err != nil {
+		log.Fatalf("failed to open Sqlite DB: %s", err)
+	}
+	defer sqldb.Close()
+
+	db, err := db.NewDatabaseImpl(db.DatabaseConfig{MetadataDir: metadataDir}, sqldb)
 	if err != nil {
 		log.Fatalf("failed to initialize DB: %s", err)
 	}
-	defer db.Close()
 
 	app := app.NewApplicationImpl(logger, youtubeDl, db)
 	logger.Info("initialized application")
