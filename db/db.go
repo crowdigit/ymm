@@ -20,10 +20,6 @@ type Uploader struct {
 	Directory string
 }
 
-type QueryBuilder interface {
-	Query() bun.Query
-}
-
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error

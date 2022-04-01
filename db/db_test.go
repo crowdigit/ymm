@@ -23,6 +23,8 @@ type DBTestSuite struct {
 	mockDb   *sql.DB
 	dataDir  string
 	config   db.DatabaseConfig
+
+	db *db.DatabaseImpl
 }
 
 func (s *DBTestSuite) SetupTest() {
@@ -35,9 +37,16 @@ func (s *DBTestSuite) SetupTest() {
 		MetadataDir: filepath.Join(s.dataDir, "metadata"),
 	}
 	s.Nil(os.Mkdir(s.config.MetadataDir, 0755))
+
+	db, err := db.NewDatabaseImpl(s.config, s.mockDb)
+	s.Nil(err)
+	s.db = db
 }
 
 func (s *DBTestSuite) TearDownTest() {
+	if err := s.mockSql.ExpectationsWereMet(); err != nil {
+		s.Error(err)
+	}
 	s.mockCtrl.Finish()
 }
 
@@ -49,9 +58,7 @@ func (s *DBTestSuite) TestStoreMetadata() {
 	expected, err := jsoniter.Marshal(expectedMap)
 	s.Nil(err)
 
-	db, err := db.NewDatabaseImpl(s.config, s.mockDb)
-	s.Nil(err)
-	s.Nil(db.StoreMetadata(id, expected))
+	s.Nil(s.db.StoreMetadata(id, expected))
 
 	path := filepath.Join(s.config.MetadataDir, fmt.Sprintf("%s.json", id))
 	file, err := os.OpenFile(path, os.O_RDONLY, 0)
@@ -62,6 +69,18 @@ func (s *DBTestSuite) TestStoreMetadata() {
 	s.Nil(err)
 
 	s.Equal(expected, got)
+}
+
+func (s *DBTestSuite) TestInsertUser() {
+	uploader := db.Uploader{}
+	s.mockSql.ExpectBegin()
+	s.mockSql.
+		ExpectExec("INSERT into uploaders").
+		WithArgs(uploader.ID, uploader.URL, uploader.Name, uploader.Directory).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	s.mockSql.ExpectCommit()
+	query := db.NewInsertUploaderQuery(uploader)
+	s.Nil(s.db.SetUploader(query))
 }
 
 func TestDBTestSuite(t *testing.T) {
