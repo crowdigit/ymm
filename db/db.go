@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
 )
 
@@ -20,9 +21,23 @@ type Uploader struct {
 	Directory string
 }
 
+type QueryBuilder interface {
+	Query() bun.Query
+}
+
+type SetUploaderQueryBuilder interface {
+	QueryBuilder
+}
+
+type GetUploaderQueryBuilder interface {
+	QueryBuilder
+}
+
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error
+	SetUploader(SetUploaderQueryBuilder) error
+	GetUploader(GetUploaderQueryBuilder) ([]Uploader, error)
 	Close()
 }
 
@@ -33,7 +48,7 @@ type DatabaseConfig struct {
 
 type DatabaseImpl struct {
 	config DatabaseConfig
-	sqldb  *sql.DB
+	bundb  *bun.DB
 }
 
 func NewDatabaseImpl(config DatabaseConfig) (*DatabaseImpl, error) {
@@ -42,9 +57,11 @@ func NewDatabaseImpl(config DatabaseConfig) (*DatabaseImpl, error) {
 		return nil, errors.Wrap(err, "failed to open sqlite DB")
 	}
 
+	bundb := bun.NewDB(sqldb, sqlitedialect.New())
+
 	return &DatabaseImpl{
 		config: config,
-		sqldb:  sqldb,
+		bundb:  bundb,
 	}, nil
 }
 
@@ -64,6 +81,14 @@ func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 	return nil
 }
 
+func (db *DatabaseImpl) SetUploader(query SetUploaderQueryBuilder) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (db *DatabaseImpl) GetUploader(query GetUploaderQueryBuilder) ([]Uploader, error) {
+	panic("not implemented") // TODO: Implement
+}
+
 func (db *DatabaseImpl) Close() {
-	db.sqldb.Close()
+	db.bundb.Close()
 }
