@@ -55,19 +55,19 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	s.Nil(err)
 	result := ydl.DownloadResult{}
 
-	s.mockYdl.EXPECT().VideoMetadata(url).
-		DoAndReturn(func(url string) ([]byte, error) {
-			return metadataBytes, nil
-		}).
-		Times(1)
-	s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
-		Return(nil).
-		Times(1)
-	s.mockYdl.EXPECT().Download(metadata).
-		DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
-			return result, nil
-		}).
-		Times(1)
+	order := []*gomock.Call{
+		s.mockYdl.EXPECT().VideoMetadata(url).
+			DoAndReturn(func(url string) ([]byte, error) {
+				return metadataBytes, nil
+			}),
+		s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
+			Return(nil),
+		s.mockYdl.EXPECT().Download(metadata).
+			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
+				return result, nil
+			}),
+	}
+	gomock.InOrder(order...)
 
 	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb)
 	s.Nil(app.DownloadSingle(url))
