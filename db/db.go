@@ -7,8 +7,18 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/driver/sqliteshim"
 )
+
+type Uploader struct {
+	bun.BaseModel `bun:"table:uploaders"`
+
+	ID        string `bun:",pk"`
+	URL       string
+	Name      string
+	Directory string
+}
 
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {

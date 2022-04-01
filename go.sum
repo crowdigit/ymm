@@ -46,6 +46,8 @@ github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc h1:9lRDQMhESg+zvGYm
 github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc/go.mod h1:bciPuU6GHm1iF1pBvUfxfsH0Wmnc2VbpgvbI9ZWuIRs=
 github.com/uptrace/bun v1.1.3 h1:v62tsUyKjVCR5q7J49uckM6CVVTqMO26aV73F3G6RFk=
 github.com/uptrace/bun v1.1.3/go.mod h1:aQbKvxs7/n9MMef/b8lYOh5Rwlo4Jd5A31E4HlYNqSc=
+github.com/uptrace/bun/dialect/sqlitedialect v1.1.3 h1:VN978Z9dIHobFSZADUGz2f8+rJANjDVHUHYmmoNKOj4=
+github.com/uptrace/bun/dialect/sqlitedialect v1.1.3/go.mod h1:7MjbsQYpEeCt05/FoNJqmekl5NvBp/aAFLsvmBgfP9A=
 github.com/uptrace/bun/driver/sqliteshim v1.1.3 h1:bxomsPizLtW2vdUJo1Vwza6F/n6C0codFSr3K9i3Yw0=
 github.com/uptrace/bun/driver/sqliteshim v1.1.3/go.mod h1:gwL2JuheLS8rQGHOsEqEUk8OUkW+I68ds6q8hU+17Xw=
 github.com/vmihailenco/msgpack/v5 v5.3.5 h1:5gO0H1iULLWGhs2H5tbAHIZTV8/cYafcFOr9znI5mJU=

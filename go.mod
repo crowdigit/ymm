@@ -23,6 +23,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/uptrace/bun v1.1.3 // indirect
+	github.com/uptrace/bun/dialect/sqlitedialect v1.1.3 // indirect
 	github.com/uptrace/bun/driver/sqliteshim v1.1.3 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
