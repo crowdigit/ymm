@@ -35,10 +35,14 @@ func main() {
 		log.Fatalf("failed to create data directory: %s", err)
 	}
 
-	db := db.NewDatabaseImpl(db.DatabaseConfig{
+	db, err := db.NewDatabaseImpl(db.DatabaseConfig{
 		DatabaseFile: databaseFile,
 		MetadataDir:  metadataDir,
 	})
+	if err != nil {
+		log.Fatalf("failed to initialize DB: %s", err)
+	}
+	defer db.Close()
 
 	app := app.NewApplicationImpl(logger, youtubeDl, db)
 	logger.Info("initialized application")

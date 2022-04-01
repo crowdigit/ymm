@@ -43,7 +43,8 @@ func (s *DBTestSuite) TestStoreMetadata() {
 	expected, err := jsoniter.Marshal(expectedMap)
 	s.Nil(err)
 
-	db := db.NewDatabaseImpl(s.config)
+	db, err := db.NewDatabaseImpl(s.config)
+	s.Nil(err)
 	s.Nil(db.StoreMetadata(id, expected))
 
 	path := filepath.Join(s.config.MetadataDir, fmt.Sprintf("%s.json", id))

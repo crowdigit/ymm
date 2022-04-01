@@ -33,6 +33,18 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
 }
 
+// Close mocks base method.
+func (m *MockDatabase) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockDatabaseMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDatabase)(nil).Close))
+}
+
 // StoreMetadata mocks base method.
 func (m *MockDatabase) StoreMetadata(arg0 string, arg1 []byte) error {
 	m.ctrl.T.Helper()

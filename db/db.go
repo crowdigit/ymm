@@ -1,16 +1,19 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun/driver/sqliteshim"
 )
 
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error
+	Close()
 }
 
 type DatabaseConfig struct {
@@ -20,12 +23,19 @@ type DatabaseConfig struct {
 
 type DatabaseImpl struct {
 	config DatabaseConfig
+	sqldb  *sql.DB
 }
 
-func NewDatabaseImpl(config DatabaseConfig) *DatabaseImpl {
+func NewDatabaseImpl(config DatabaseConfig) (*DatabaseImpl, error) {
+	sqldb, err := sql.Open(sqliteshim.ShimName, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open sqlite DB")
+	}
+
 	return &DatabaseImpl{
 		config: config,
-	}
+		sqldb:  sqldb,
+	}, nil
 }
 
 func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
@@ -42,4 +52,8 @@ func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 	}
 
 	return nil
+}
+
+func (db *DatabaseImpl) Close() {
+	db.sqldb.Close()
 }
