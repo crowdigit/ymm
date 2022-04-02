@@ -13,6 +13,10 @@ func (b InsertUploaderQueryBuilder) Query() bun.Query {
 	panic("not implemented")
 }
 
-func NewInsertUploaderQuery(uploader Uploader) QueryBuilder {
+func NewInsertUploaderQuery(db *bun.DB, uploader Uploader) QueryBuilder {
+	panic("not implemented")
+}
+
+func NewGetUploaderQuery(db *bun.DB, id string) QueryBuilder {
 	panic("not implemented")
 }

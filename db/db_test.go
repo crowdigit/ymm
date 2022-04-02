@@ -79,8 +79,28 @@ func (s *DBTestSuite) TestInsertUser() {
 		WithArgs(uploader.ID, uploader.URL, uploader.Name, uploader.Directory).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mockSql.ExpectCommit()
-	query := db.NewInsertUploaderQuery(uploader)
+	query := db.NewInsertUploaderQuery(s.db.BunDB(), uploader)
 	s.Nil(s.db.SetUploader(query))
+}
+
+func (s *DBTestSuite) TestGetUser() {
+	uploader := db.Uploader{
+		ID:        "uploader id",
+		URL:       "uploader url",
+		Name:      "uploader name",
+		Directory: "uploader directory",
+	}
+	rows := sqlmock.NewRows([]string{"id", "url", "name", "directory"}).
+		AddRow(uploader.ID, uploader.URL, uploader.Name, uploader.Directory)
+	s.mockSql.
+		ExpectQuery("SELECT * FROM uploaders").
+		WithArgs(uploader.ID).
+		WillReturnRows(rows)
+	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
+	uploaders, err := s.db.GetUploader(query)
+	s.Nil(err)
+	s.Len(uploaders, 1)
+	s.Equal(uploader, uploaders[0])
 }
 
 func TestDBTestSuite(t *testing.T) {

@@ -68,3 +68,7 @@ func (db *DatabaseImpl) SetUploader(query QueryBuilder) error {
 func (db *DatabaseImpl) GetUploader(query QueryBuilder) ([]Uploader, error) {
 	panic("not implemented") // TODO: Implement
 }
+
+func (db *DatabaseImpl) BunDB() *bun.DB {
+	return db.bundb
+}
