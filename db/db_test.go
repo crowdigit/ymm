@@ -93,8 +93,7 @@ func (s *DBTestSuite) TestSelectSingleUser() {
 	rows := sqlmock.NewRows([]string{"id", "url", "name", "directory"}).
 		AddRow(uploader.ID, uploader.URL, uploader.Name, uploader.Directory)
 	s.mockSql.
-		ExpectQuery("SELECT * FROM uploaders").
-		WithArgs(uploader.ID).
+		ExpectQuery("SELECT").
 		WillReturnRows(rows)
 	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
 	uploaders, err := s.db.SelectUploader(query)
