@@ -72,13 +72,15 @@ func (s *DBTestSuite) TestStoreMetadata() {
 }
 
 func (s *DBTestSuite) TestInsertUser() {
-	uploader := db.Uploader{}
-	s.mockSql.ExpectBegin()
+	uploader := db.Uploader{
+		ID:        "uploader id",
+		URL:       "uploader url",
+		Name:      "uploader name",
+		Directory: "uploader directory",
+	}
 	s.mockSql.
-		ExpectExec("INSERT into uploaders").
-		WithArgs(uploader.ID, uploader.URL, uploader.Name, uploader.Directory).
+		ExpectExec("INSERT").
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	s.mockSql.ExpectCommit()
 	query := db.NewInsertUploaderQuery(s.db.BunDB(), uploader)
 	s.Nil(s.db.InsertUploader(query))
 }
