@@ -63,7 +63,9 @@ func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 }
 
 func (db *DatabaseImpl) InsertUploader(query *bun.InsertQuery) error {
-	panic("not implemented") // TODO: Implement
+	ctx := context.Background()
+	_, err := query.Exec(ctx)
+	return errors.Wrap(err, "failed to execute insert query")
 }
 
 func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, error) {
