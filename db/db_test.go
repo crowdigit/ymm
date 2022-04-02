@@ -80,10 +80,10 @@ func (s *DBTestSuite) TestInsertUser() {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mockSql.ExpectCommit()
 	query := db.NewInsertUploaderQuery(s.db.BunDB(), uploader)
-	s.Nil(s.db.SetUploader(query))
+	s.Nil(s.db.InsertUploader(query))
 }
 
-func (s *DBTestSuite) TestGetUser() {
+func (s *DBTestSuite) TestSelectSingleUser() {
 	uploader := db.Uploader{
 		ID:        "uploader id",
 		URL:       "uploader url",
@@ -97,7 +97,7 @@ func (s *DBTestSuite) TestGetUser() {
 		WithArgs(uploader.ID).
 		WillReturnRows(rows)
 	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
-	uploaders, err := s.db.GetUploader(query)
+	uploaders, err := s.db.SelectUploader(query)
 	s.Nil(err)
 	s.Len(uploaders, 1)
 	s.Equal(uploader, uploaders[0])

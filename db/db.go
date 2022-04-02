@@ -23,8 +23,8 @@ type Uploader struct {
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error
-	SetUploader(bun.Query) error
-	GetUploader(bun.Query) ([]Uploader, error)
+	InsertUploader(*bun.InsertQuery) error
+	SelectUploader(*bun.SelectQuery) ([]Uploader, error)
 }
 
 type DatabaseConfig struct {
@@ -61,11 +61,11 @@ func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 	return nil
 }
 
-func (db *DatabaseImpl) SetUploader(query bun.Query) error {
+func (db *DatabaseImpl) InsertUploader(query *bun.InsertQuery) error {
 	panic("not implemented") // TODO: Implement
 }
 
-func (db *DatabaseImpl) GetUploader(query bun.Query) ([]Uploader, error) {
+func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, error) {
 	panic("not implemented") // TODO: Implement
 }
 

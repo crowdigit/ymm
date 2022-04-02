@@ -9,7 +9,7 @@ import (
 
 	db "github.com/crowdigit/ymm/db"
 	gomock "github.com/golang/mock/gomock"
-	schema "github.com/uptrace/bun/schema"
+	bun "github.com/uptrace/bun"
 )
 
 // MockDatabase is a mock of Database interface.
@@ -35,33 +35,33 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
 }
 
-// GetUploader mocks base method.
-func (m *MockDatabase) GetUploader(arg0 schema.Query) ([]db.Uploader, error) {
+// InsertUploader mocks base method.
+func (m *MockDatabase) InsertUploader(arg0 *bun.InsertQuery) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUploader", arg0)
+	ret := m.ctrl.Call(m, "InsertUploader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertUploader indicates an expected call of InsertUploader.
+func (mr *MockDatabaseMockRecorder) InsertUploader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUploader", reflect.TypeOf((*MockDatabase)(nil).InsertUploader), arg0)
+}
+
+// SelectUploader mocks base method.
+func (m *MockDatabase) SelectUploader(arg0 *bun.SelectQuery) ([]db.Uploader, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectUploader", arg0)
 	ret0, _ := ret[0].([]db.Uploader)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUploader indicates an expected call of GetUploader.
-func (mr *MockDatabaseMockRecorder) GetUploader(arg0 interface{}) *gomock.Call {
+// SelectUploader indicates an expected call of SelectUploader.
+func (mr *MockDatabaseMockRecorder) SelectUploader(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUploader", reflect.TypeOf((*MockDatabase)(nil).GetUploader), arg0)
-}
-
-// SetUploader mocks base method.
-func (m *MockDatabase) SetUploader(arg0 schema.Query) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetUploader", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetUploader indicates an expected call of SetUploader.
-func (mr *MockDatabaseMockRecorder) SetUploader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUploader", reflect.TypeOf((*MockDatabase)(nil).SetUploader), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectUploader", reflect.TypeOf((*MockDatabase)(nil).SelectUploader), arg0)
 }
 
 // StoreMetadata mocks base method.
