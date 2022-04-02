@@ -9,6 +9,7 @@ import (
 
 	db "github.com/crowdigit/ymm/db"
 	gomock "github.com/golang/mock/gomock"
+	schema "github.com/uptrace/bun/schema"
 )
 
 // MockDatabase is a mock of Database interface.
@@ -35,7 +36,7 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 }
 
 // GetUploader mocks base method.
-func (m *MockDatabase) GetUploader(arg0 db.QueryBuilder) ([]db.Uploader, error) {
+func (m *MockDatabase) GetUploader(arg0 schema.Query) ([]db.Uploader, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUploader", arg0)
 	ret0, _ := ret[0].([]db.Uploader)
@@ -50,7 +51,7 @@ func (mr *MockDatabaseMockRecorder) GetUploader(arg0 interface{}) *gomock.Call {
 }
 
 // SetUploader mocks base method.
-func (m *MockDatabase) SetUploader(arg0 db.QueryBuilder) error {
+func (m *MockDatabase) SetUploader(arg0 schema.Query) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetUploader", arg0)
 	ret0, _ := ret[0].(error)
