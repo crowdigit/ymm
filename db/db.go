@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -66,7 +67,10 @@ func (db *DatabaseImpl) InsertUploader(query *bun.InsertQuery) error {
 }
 
 func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, error) {
-	panic("not implemented") // TODO: Implement
+	var uploaders []Uploader
+	ctx := context.Background()
+	err := query.Model(&uploaders).Scan(ctx)
+	return uploaders, errors.Wrap(err, "failed to query scan query result")
 }
 
 func (db *DatabaseImpl) BunDB() *bun.DB {
