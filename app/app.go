@@ -99,7 +99,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	for _, metadatumBytes := range metadataBytes {
 		metadatum := ydl.VideoMetadata{}
 		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
-			return errors.Wrap(err, "failed to unmarshal video metadata")
+			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
 		}
 
 		uploader, err := getOrCreateUser(app.db, metadatum)
