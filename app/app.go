@@ -75,6 +75,28 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to unmarshal video metadata")
 	}
 
+	query := db.NewSelectUploaderQuery(app.db.BunDB(), metadata.UploaderID)
+	uploaders, err := app.db.SelectUploader(query)
+	if err != nil {
+		return errors.Wrap(err, "failed to query uploader data")
+	}
+
+	uploader := db.Uploader{}
+	if len(uploaders) > 0 {
+		uploader = uploaders[0]
+	} else {
+		uploader = db.Uploader{
+			ID:        metadata.UploaderID,
+			URL:       metadata.UploaderURL,
+			Name:      metadata.Uploader,
+			Directory: metadata.UploaderID,
+		}
+		query := db.NewInsertUploaderQuery(app.db.BunDB(), uploader)
+		if err := app.db.InsertUploader(query); err != nil {
+			return errors.Wrap(err, "failed to insert uploader data")
+		}
+	}
+
 	if err := app.db.StoreMetadata(metadata.ID, metadataBytes); err != nil {
 		return errors.Wrap(err, "failed to store video metadata")
 	}
