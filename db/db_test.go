@@ -97,7 +97,7 @@ func (s *DBTestSuite) TestSelectSingleUser() {
 	s.mockSql.
 		ExpectQuery("SELECT").
 		WillReturnRows(rows)
-	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
+	query := db.NewSelectUploaderQuery(s.db.BunDB(), uploader.ID)
 	uploaders, err := s.db.SelectUploader(query)
 	s.Nil(err)
 	s.Len(uploaders, 1)

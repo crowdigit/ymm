@@ -57,7 +57,7 @@ func (s *QueryTestSuite) TestSelectUser() {
 		uploader.Directory)
 	s.Nil(err)
 
-	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
+	query := db.NewSelectUploaderQuery(s.db.BunDB(), uploader.ID)
 	uploaders, err := s.db.SelectUploader(query)
 	s.Nil(err)
 	s.Len(uploaders, 1)
@@ -80,7 +80,6 @@ func (s *QueryTestSuite) TestInsertUser() {
 		expected.ID,
 	)
 	s.Nil(err)
-
 	s.True(rows.Next())
 
 	got := db.Uploader{}
