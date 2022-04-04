@@ -40,11 +40,36 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	}
 
 	metadata := make([]ydl.VideoMetadata, 0, len(metadataBytes))
+	uploaderDirs := make(map[string]string)
 	for _, metadatumBytes := range metadataBytes {
 		metadatum := ydl.VideoMetadata{}
 		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
 			return errors.Wrap(err, "failed to unmarshal video metadata")
 		}
+
+		query := db.NewSelectUploaderQuery(app.db.BunDB(), metadatum.UploaderID)
+		uploaders, err := app.db.SelectUploader(query)
+		if err != nil {
+			return errors.Wrap(err, "failed to query uploader data")
+		}
+
+		uploader := db.Uploader{}
+		if len(uploaders) > 0 {
+			uploader = uploaders[0]
+		} else {
+			uploader = db.Uploader{
+				ID:        metadatum.UploaderID,
+				URL:       metadatum.UploaderURL,
+				Name:      metadatum.Uploader,
+				Directory: metadatum.UploaderID,
+			}
+			query := db.NewInsertUploaderQuery(app.db.BunDB(), uploader)
+			if err := app.db.InsertUploader(query); err != nil {
+				return errors.Wrap(err, "failed to insert uploader data")
+			}
+		}
+		uploaderDirs[uploader.ID] = uploader.Directory
+
 		metadata = append(metadata, metadatum)
 		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
 			return errors.Wrap(err, "failed to store video metadata")
@@ -52,7 +77,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	}
 
 	for _, metadatum := range metadata {
-		if _, err := app.ydl.Download(metadatum); err != nil {
+		if _, err := app.ydl.Download(uploaderDirs[metadatum.UploaderID], metadatum); err != nil {
 			return errors.Wrap(err, "failed to download video with metadata")
 		}
 	}
@@ -101,7 +126,7 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to store video metadata")
 	}
 
-	_, err = app.ydl.Download(metadata)
+	_, err = app.ydl.Download(uploader.Directory, metadata)
 	if err != nil {
 		return errors.Wrap(err, "failed to download video")
 	}

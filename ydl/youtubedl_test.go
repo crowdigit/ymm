@@ -117,7 +117,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		Times(1)
 
 	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
-	got, err := youtubeDl.Download(metadata)
+	got, err := youtubeDl.Download("/asdf", metadata)
 	s.Nil(err)
 
 	expected := ydl.DownloadResult{}

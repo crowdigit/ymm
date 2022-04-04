@@ -15,7 +15,7 @@ type DownloadResult struct{}
 type YoutubeDL interface {
 	PlaylistMetadata(url string) ([][]byte, error)
 	VideoMetadata(url string) ([]byte, error)
-	Download(metadata VideoMetadata) (DownloadResult, error)
+	Download(workDir string, metadata VideoMetadata) (DownloadResult, error)
 }
 
 type YoutubeDLImpl struct {
@@ -144,7 +144,7 @@ loop:
 	}
 }
 
-func (ydl YoutubeDLImpl) Download(metadata VideoMetadata) (DownloadResult, error) {
+func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (DownloadResult, error) {
 	if !contains251Format(metadata.Formats) {
 		return DownloadResult{}, fmt.Errorf("video %s does not contain format 251", metadata.ID)
 	}

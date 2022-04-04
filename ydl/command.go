@@ -7,6 +7,7 @@ import (
 
 //go:generate mockgen -destination=../mock/mock_command.go -package=mock github.com/crowdigit/ymm/ydl Command
 type Command interface {
+	SetDir(string)
 	Start() error
 	StderrPipe() (io.ReadCloser, error)
 	StdoutPipe() (io.ReadCloser, error)
@@ -20,6 +21,10 @@ type CommandProvider interface {
 
 type commandImpl struct {
 	cmd *exec.Cmd
+}
+
+func (c commandImpl) SetDir(dir string) {
+	c.cmd.Dir = dir
 }
 
 func (c commandImpl) Start() error {

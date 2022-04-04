@@ -62,7 +62,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			}),
 		s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
 			Return(nil),
-		s.mockYdl.EXPECT().Download(metadata).
+		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
 			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
 				return result, nil
 			}),
@@ -135,7 +135,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			Return(nil))
 	}
 	for i := 0; i < len(metadata); i += 1 {
-		order = append(order, s.mockYdl.EXPECT().Download(metadata[i]).
+		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
 			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
 				return results[0], nil
 			}))

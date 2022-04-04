@@ -34,6 +34,18 @@ func (m *MockCommand) EXPECT() *MockCommandMockRecorder {
 	return m.recorder
 }
 
+// SetDir mocks base method.
+func (m *MockCommand) SetDir(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDir", arg0)
+}
+
+// SetDir indicates an expected call of SetDir.
+func (mr *MockCommandMockRecorder) SetDir(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDir", reflect.TypeOf((*MockCommand)(nil).SetDir), arg0)
+}
+
 // Start mocks base method.
 func (m *MockCommand) Start() error {
 	m.ctrl.T.Helper()

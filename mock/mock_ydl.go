@@ -35,18 +35,18 @@ func (m *MockYoutubeDL) EXPECT() *MockYoutubeDLMockRecorder {
 }
 
 // Download mocks base method.
-func (m *MockYoutubeDL) Download(arg0 ydl.VideoMetadata) (ydl.DownloadResult, error) {
+func (m *MockYoutubeDL) Download(arg0 string, arg1 ydl.VideoMetadata) (ydl.DownloadResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Download", arg0)
+	ret := m.ctrl.Call(m, "Download", arg0, arg1)
 	ret0, _ := ret[0].(ydl.DownloadResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockYoutubeDLMockRecorder) Download(arg0 interface{}) *gomock.Call {
+func (mr *MockYoutubeDLMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockYoutubeDL)(nil).Download), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockYoutubeDL)(nil).Download), arg0, arg1)
 }
 
 // PlaylistMetadata mocks base method.
