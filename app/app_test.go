@@ -1,15 +1,20 @@
 package app_test
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
 	"github.com/crowdigit/ymm/app"
+	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/mock"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/golang/mock/gomock"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/suite"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/sqlitedialect"
+	"github.com/uptrace/bun/driver/sqliteshim"
 	"go.uber.org/zap"
 )
 
@@ -19,16 +24,22 @@ type AppTestSuite struct {
 	mockCtrl *gomock.Controller
 	mockYdl  *mock.MockYoutubeDL
 	mockDb   *mock.MockDatabase
+	bundb    *bun.DB
 }
 
 func (s *AppTestSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockYdl = mock.NewMockYoutubeDL(s.mockCtrl)
 	s.mockDb = mock.NewMockDatabase(s.mockCtrl)
+
+	sqldb, err := sql.Open(sqliteshim.ShimName, ":memory:")
+	s.Nil(err)
+	s.bundb = bun.NewDB(sqldb, sqlitedialect.New())
 }
 
 func (s *AppTestSuite) TearDownTest() {
 	s.mockCtrl.Finish()
+	s.bundb.Close()
 }
 
 func (s *AppTestSuite) TestDownloadSingle() {
@@ -57,15 +68,19 @@ func (s *AppTestSuite) TestDownloadSingle() {
 
 	order := []*gomock.Call{
 		s.mockYdl.EXPECT().VideoMetadata(url).
-			DoAndReturn(func(url string) ([]byte, error) {
-				return metadataBytes, nil
-			}),
+			Return(metadataBytes, nil),
+		s.mockDb.EXPECT().BunDB().
+			Return(s.bundb),
+		s.mockDb.EXPECT().SelectUploader(gomock.Any()).
+			Return([]db.Uploader{}, nil),
+		s.mockDb.EXPECT().BunDB().
+			Return(s.bundb),
+		s.mockDb.EXPECT().InsertUploader(gomock.Any()).
+			Return(nil),
 		s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
 			Return(nil),
 		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
-			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
-				return result, nil
-			}),
+			Return(result, nil),
 	}
 	gomock.InOrder(order...)
 
@@ -131,14 +146,20 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			return metadataBytes, nil
 		}))
 	for i, metadatumBytes := range metadataBytes {
+		order = append(order, s.mockDb.EXPECT().BunDB().
+			Return(s.bundb))
+		order = append(order, s.mockDb.EXPECT().SelectUploader(gomock.Any()).
+			Return([]db.Uploader{}, nil))
+		order = append(order, s.mockDb.EXPECT().BunDB().
+			Return(s.bundb))
+		order = append(order, s.mockDb.EXPECT().InsertUploader(gomock.Any()).
+			Return(nil))
 		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadata[i].ID, metadatumBytes).
 			Return(nil))
 	}
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
-			DoAndReturn(func(metadata ydl.VideoMetadata) (ydl.DownloadResult, error) {
-				return results[0], nil
-			}))
+			Return(results[i], nil))
 	}
 	gomock.InOrder(order...)
 
