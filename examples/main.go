@@ -10,6 +10,7 @@ import (
 	"github.com/crowdigit/ymm/app"
 	"github.com/crowdigit/ymm/command"
 	"github.com/crowdigit/ymm/db"
+	"github.com/crowdigit/ymm/loudness"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/uptrace/bun/driver/sqliteshim"
 	"go.uber.org/zap"
@@ -27,6 +28,7 @@ func main() {
 
 	commandProvider := command.NewCommandProviderImpl()
 	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
+	loudnessScanner := loudness.NewLoudnessScanner(logger, commandProvider)
 
 	metadataDir := filepath.Join(xdg.DataHome, "ymm", "metadata")
 	if err := os.MkdirAll(metadataDir, 0755); err != nil {
@@ -53,7 +55,7 @@ func main() {
 		DownloadRootDir: filepath.Join(xdg.DataHome, "ymm", "music"),
 	}
 
-	app := app.NewApplicationImpl(logger, youtubeDl, db, config)
+	app := app.NewApplicationImpl(logger, youtubeDl, loudnessScanner, db, config)
 	logger.Info("initialized application")
 	if err := app.DownloadSingle(url); err != nil {
 		log.Fatalf("%s", err)
