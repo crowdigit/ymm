@@ -21,15 +21,17 @@ import (
 type AppTestSuite struct {
 	suite.Suite
 
-	mockCtrl *gomock.Controller
-	mockYdl  *mock.MockYoutubeDL
-	mockDb   *mock.MockDatabase
-	bundb    *bun.DB
+	mockCtrl            *gomock.Controller
+	mockYdl             *mock.MockYoutubeDL
+	mockLoudnessScanner *mock.MockLoudnessScanner
+	mockDb              *mock.MockDatabase
+	bundb               *bun.DB
 }
 
 func (s *AppTestSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockYdl = mock.NewMockYoutubeDL(s.mockCtrl)
+	s.mockLoudnessScanner = mock.NewMockLoudnessScanner(s.mockCtrl)
 	s.mockDb = mock.NewMockDatabase(s.mockCtrl)
 
 	sqldb, err := sql.Open(sqliteshim.ShimName, ":memory:")
@@ -59,7 +61,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		UploaderID:  "some_uploader",
 		UploaderURL: "some_uploader_url",
 		UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC)),
-		Filename:    "some_filename",
+		Filename:    "some_filename.mp4",
 		Duration:    123,
 	}
 	metadataBytes, err := jsoniter.Marshal(metadata)
@@ -81,6 +83,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			Return(nil),
 		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
 			Return(result, nil),
+		s.mockLoudnessScanner.EXPECT().Tag("some_filename.mp3"),
 	}
 	gomock.InOrder(order...)
 
@@ -88,7 +91,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		DownloadRootDir: s.T().TempDir(),
 	}
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb, config)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
 	s.Nil(app.DownloadSingle(url))
 }
 
@@ -111,7 +114,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			UploaderID:  "some_uploader 0",
 			UploaderURL: "some_uploader_url_0",
 			UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 27, 0, 0, 0, 0, time.UTC)),
-			Filename:    "some_filename_0",
+			Filename:    "some_filename_0.mp4",
 			Duration:    123,
 		},
 		{
@@ -129,10 +132,11 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			UploaderID:  "some_uploader 1",
 			UploaderURL: "some_uploader_url_1",
 			UploadDate:  ydl.NewJSONTime(time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC)),
-			Filename:    "some_filename_1",
+			Filename:    "some_filename_1.mp4",
 			Duration:    124,
 		},
 	}
+	filenames := []string{"some_filename_0.mp3", "some_filename_1.mp3"}
 	metadataBytes := make([][]byte, 0, len(metadata))
 	for _, metadatum := range metadata {
 		metadatumBytes, err := jsoniter.Marshal(metadatum)
@@ -144,7 +148,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	}
 	s.Equal(len(metadata), len(results))
 
-	order := make([]*gomock.Call, 0, len(metadata)*2+1)
+	order := make([]*gomock.Call, 0)
 	order = append(order, s.mockYdl.EXPECT().PlaylistMetadata(url).
 		DoAndReturn(func(url string) ([][]byte, error) {
 			return metadataBytes, nil
@@ -164,6 +168,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
 			Return(results[i], nil))
+		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filenames[i]))
 	}
 	gomock.InOrder(order...)
 
@@ -171,7 +176,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 		DownloadRootDir: s.T().TempDir(),
 	}
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb, config)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
 	s.Nil(app.DownloadPlaylist(url))
 }
 
