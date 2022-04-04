@@ -1,10 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/crowdigit/ymm/db"
+	"github.com/crowdigit/ymm/loudness"
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -22,19 +25,27 @@ type ApplicationConfig struct {
 }
 
 type ApplicationImpl struct {
-	logger *zap.SugaredLogger
-	ydl    ydl.YoutubeDL
-	db     db.Database
-	config ApplicationConfig
+	logger   *zap.SugaredLogger
+	ydl      ydl.YoutubeDL
+	loudness loudness.LoudnessScanner
+	db       db.Database
+	config   ApplicationConfig
 }
 
-func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, db db.Database, config ApplicationConfig) Application {
+func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, loudness loudness.LoudnessScanner, db db.Database, config ApplicationConfig) Application {
 	return ApplicationImpl{
-		logger: logger,
-		ydl:    ydl,
-		db:     db,
-		config: config,
+		logger:   logger,
+		ydl:      ydl,
+		loudness: loudness,
+		db:       db,
+		config:   config,
 	}
+}
+
+func audioFilename(videoFilename string) string {
+	return fmt.Sprintf(
+		"%s.mp3",
+		strings.TrimSuffix(videoFilename, filepath.Ext(videoFilename)))
 }
 
 func (app ApplicationImpl) DownloadPlaylist(url string) error {
@@ -93,6 +104,11 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		if _, err := app.ydl.Download(uploaderDirs[metadatum.UploaderID], metadatum); err != nil {
 			return errors.Wrap(err, "failed to download video with metadata")
 		}
+
+		path := audioFilename(metadatum.Filename)
+		if err := app.loudness.Tag(path); err != nil {
+			return errors.Wrap(err, "failed to tag loudness")
+		}
 	}
 
 	return nil
@@ -148,6 +164,10 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 	_, err = app.ydl.Download(downloadDir, metadata)
 	if err != nil {
 		return errors.Wrap(err, "failed to download video")
+	}
+
+	if err := app.loudness.Tag(audioFilename(metadata.Filename)); err != nil {
+		return errors.Wrap(err, "failed to tag loudness")
 	}
 
 	return nil
