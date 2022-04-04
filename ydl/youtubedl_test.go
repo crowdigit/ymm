@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crowdigit/ymm/command"
 	"github.com/crowdigit/ymm/mock"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/golang/mock/gomock"
@@ -45,7 +46,7 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 	url := "http://asdf.com/some/url"
 	s.mockCommandProvider.EXPECT().
 		NewCommand("youtube-dl", "--dump-json", url).
-		DoAndReturn(func(name string, args ...string) ydl.Command {
+		DoAndReturn(func(name string, args ...string) command.Command {
 			command := mock.NewMockCommand(s.mockCtrl)
 			command.EXPECT().Start().Times(1)
 			command.EXPECT().StderrPipe().
@@ -103,7 +104,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 			"--audio-quality", "0",
 			metadata.WebpageURL,
 		).
-		DoAndReturn(func(name string, args ...string) ydl.Command {
+		DoAndReturn(func(name string, args ...string) command.Command {
 			command := mock.NewMockCommand(s.mockCtrl)
 			command.EXPECT().SetDir(downloadDir)
 			command.EXPECT().Start().Times(1)

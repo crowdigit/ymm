@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/crowdigit/ymm/command"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -20,10 +21,10 @@ type YoutubeDL interface {
 
 type YoutubeDLImpl struct {
 	logger          *zap.SugaredLogger
-	commandProvider CommandProvider
+	commandProvider command.CommandProvider
 }
 
-func NewYoutubeDLImpl(logger *zap.SugaredLogger, command CommandProvider) YoutubeDL {
+func NewYoutubeDLImpl(logger *zap.SugaredLogger, command command.CommandProvider) YoutubeDL {
 	return YoutubeDLImpl{
 		logger:          logger,
 		commandProvider: command,

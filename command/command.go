@@ -1,11 +1,11 @@
-package ydl
+package command
 
 import (
 	"io"
 	"os/exec"
 )
 
-//go:generate mockgen -destination=../mock/mock_command.go -package=mock github.com/crowdigit/ymm/ydl Command
+//go:generate mockgen -destination=../mock/mock_command.go -package=mock github.com/crowdigit/ymm/command Command
 type Command interface {
 	SetDir(string)
 	Start() error
@@ -14,7 +14,7 @@ type Command interface {
 	Wait() (int, error)
 }
 
-//go:generate mockgen -destination=../mock/mock_command_provider.go -package=mock github.com/crowdigit/ymm/ydl CommandProvider
+//go:generate mockgen -destination=../mock/mock_command_provider.go -package=mock github.com/crowdigit/ymm/command CommandProvider
 type CommandProvider interface {
 	NewCommand(name string, arg ...string) Command
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/crowdigit/ymm/app"
+	"github.com/crowdigit/ymm/command"
 	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/ydl"
 	"github.com/uptrace/bun/driver/sqliteshim"
@@ -24,7 +25,7 @@ func main() {
 
 	url := "https://www.youtube.com/watch?v=Ss-ba-g82-0"
 
-	commandProvider := ydl.NewCommandProviderImpl()
+	commandProvider := command.NewCommandProviderImpl()
 	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
 
 	metadataDir := filepath.Join(xdg.DataHome, "ymm", "metadata")
