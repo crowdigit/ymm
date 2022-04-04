@@ -32,7 +32,7 @@ var commonTestMetadata = ydl.VideoMetadata{
 			Width:  1920,
 		},
 	},
-	Description: "03\n惑わされてしまう！\n\n作曲/CG : gaburyu\nVocal : 可不\n-------------------------------------\n▼カシ・オトハ ver.\nhttps://youtu.be/DcKQz72s0OM\n\n▼ほかの曲/Other Works\nhttps://youtube.com/playlist?list=PLmnvJgQL8hd5hyXYVoP9WqUGHyqZDRZ9N\n\n▼gaburyu\n❏Twitter \nhttps://twitter.com/gabustep\n❏Youtube\nhttps://www.youtube.com/c/gaburyu\n❏niconico\nhttps://www.nicovideo.jp/series/99575\n-------------------------------------\n\n\n #gaburyu #可不 #エンパスィー",
+	Description: "qwer",
 	Uploader:    "gaburyu",
 	UploaderID:  "UC-V8o6aa9C133RYMtaobq6w",
 	UploaderURL: "http://www.youtube.com/channel/UC-V8o6aa9C133RYMtaobq6w",
@@ -55,4 +55,47 @@ func TestMetadataUnmarshal(t *testing.T) {
 
 	expected := commonTestMetadata
 	assert.Equal(t, expected, got)
+}
+
+var commonTestMetadataList = []ydl.VideoMetadata{
+	{
+		ID:      "E6GimcGTCvk",
+		Title:   "半透明 / 初音ミク MV",
+		Formats: []ydl.Format{{FormatID: "251"}},
+		Thumbnails: []ydl.Thumbnail{
+			{
+				URL:    "https://i.ytimg.com/vi_webp/E6GimcGTCvk/maxresdefault.webp",
+				ID:     "4",
+				Height: 1080,
+				Width:  1920,
+			},
+		},
+		Description: "asdf",
+		Uploader:    "獅子志司",
+		UploaderID:  "UCihQ9WPpwc-fZ9lz3ZjAYnA",
+		UploaderURL: "http://www.youtube.com/channel/UCihQ9WPpwc-fZ9lz3ZjAYnA",
+		UploadDate:  ydl.NewJSONTime(time.Date(2021, time.July, 31, 0, 0, 0, 0, time.UTC)),
+		WebpageURL:  "https://www.youtube.com/watch?v=E6GimcGTCvk",
+		Filename:    "半透明 _ 初音ミク MV-E6GimcGTCvk.webm",
+		Duration:    197,
+	},
+	{
+		ID:      "228WfzixKVw",
+		Title:   "鬣犬新書 / 初音ミク MV",
+		Formats: []ydl.Format{{FormatID: "251"}},
+		Thumbnails: []ydl.Thumbnail{{
+			URL:    "https://i.ytimg.com/vi/228WfzixKVw/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBDF4taNUQmyl11-NKSWch7Tr86OA",
+			ID:     "3",
+			Height: 188,
+			Width:  336,
+		}},
+		Description: "zxcv",
+		Uploader:    "獅子志司",
+		UploaderID:  "UCihQ9WPpwc-fZ9lz3ZjAYnA",
+		UploaderURL: "http://www.youtube.com/channel/UCihQ9WPpwc-fZ9lz3ZjAYnA",
+		UploadDate:  &ydl.JSONTime{},
+		WebpageURL:  "https://www.youtube.com/watch?v=228WfzixKVw",
+		Filename:    "鬣犬新書 _ 初音ミク MV-228WfzixKVw.mp4",
+		Duration:    223,
+	},
 }
