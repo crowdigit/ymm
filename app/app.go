@@ -14,6 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	ERR_UNMARSHAL_METADATA   = "failed to unmarshal video metadata"
+	ERR_STORE_VIDEO_METADATA = "failed to store video metadata"
+	ERR_DOWNLOAD_VIDEO       = "failed to download video"
+	ERR_TAG_LOUDNESS         = "failed to tag loudness"
+	ERR_MAKE_DOWNLOAD_DIR    = "failed to make download directory"
+)
+
 //go:generate mockgen -destination=../mock/mock_app.go -package=mock github.com/crowdigit/ymm/app Application
 type Application interface {
 	DownloadPlaylist(url string) error
@@ -48,11 +56,38 @@ func audioFilename(videoFilename string) string {
 		strings.TrimSuffix(videoFilename, filepath.Ext(videoFilename)))
 }
 
+func insertUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, error) {
+	uploader := db.Uploader{
+		ID:        metadata.UploaderID,
+		URL:       metadata.UploaderURL,
+		Name:      metadata.Uploader,
+		Directory: metadata.UploaderID,
+	}
+	query := db.NewInsertUploaderQuery(db_.BunDB(), uploader)
+	if err := db_.InsertUploader(query); err != nil {
+		return db.Uploader{}, errors.Wrap(err, "failed to insert uploader data")
+	}
+	return uploader, nil
+}
+
+func getOrCreateUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, error) {
+	query := db.NewSelectUploaderQuery(db_.BunDB(), metadata.UploaderID)
+	uploaders, err := db_.SelectUploader(query)
+	if err != nil {
+		return db.Uploader{}, errors.Wrap(err, "failed to select uploader data")
+	}
+
+	if len(uploaders) > 0 {
+		return uploaders[0], nil
+	}
+
+	return insertUser(db_, metadata)
+}
+
 func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	// TODO retry failed downloads
 	// TODO save download result
 	// TODO configurable concurrent downloads
-	// TODO run loudness scanner
 
 	metadataBytes, err := app.ydl.PlaylistMetadata(url)
 	if err != nil {
@@ -67,48 +102,32 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return errors.Wrap(err, "failed to unmarshal video metadata")
 		}
 
-		query := db.NewSelectUploaderQuery(app.db.BunDB(), metadatum.UploaderID)
-		uploaders, err := app.db.SelectUploader(query)
+		uploader, err := getOrCreateUser(app.db, metadatum)
 		if err != nil {
-			return errors.Wrap(err, "failed to query uploader data")
+			return err
 		}
 
-		uploader := db.Uploader{}
-		if len(uploaders) > 0 {
-			uploader = uploaders[0]
-		} else {
-			uploader = db.Uploader{
-				ID:        metadatum.UploaderID,
-				URL:       metadatum.UploaderURL,
-				Name:      metadatum.Uploader,
-				Directory: metadatum.UploaderID,
-			}
-			query := db.NewInsertUploaderQuery(app.db.BunDB(), uploader)
-			if err := app.db.InsertUploader(query); err != nil {
-				return errors.Wrap(err, "failed to insert uploader data")
-			}
-		}
 		downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
 		if err := os.MkdirAll(downloadDir, 0755); err != nil {
-			return errors.Wrap(err, "failed to make download directory")
+			return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
 		}
 		uploaderDirs[uploader.ID] = downloadDir
 
 		metadata = append(metadata, metadatum)
 		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
-			return errors.Wrap(err, "failed to store video metadata")
+			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
 		}
 	}
 
 	for _, metadatum := range metadata {
 		uploaderDirectory := uploaderDirs[metadatum.UploaderID]
 		if _, err := app.ydl.Download(uploaderDirectory, metadatum); err != nil {
-			return errors.Wrap(err, "failed to download video with metadata")
+			return errors.Wrap(err, ERR_DOWNLOAD_VIDEO)
 		}
 
 		path := filepath.Join(uploaderDirectory, audioFilename(metadatum.Filename))
 		if err := app.loudness.Tag(path); err != nil {
-			return errors.Wrap(err, "failed to tag loudness")
+			return errors.Wrap(err, ERR_TAG_LOUDNESS)
 		}
 	}
 
@@ -118,7 +137,6 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 func (app ApplicationImpl) DownloadSingle(url string) error {
 	// TODO retry failed downloads
 	// TODO save download result
-	// TODO run loudness scanner
 
 	metadataBytes, err := app.ydl.VideoMetadata(url)
 	if err != nil {
@@ -127,49 +145,31 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 
 	metadata := ydl.VideoMetadata{}
 	if err := jsoniter.Unmarshal(metadataBytes, &metadata); err != nil {
-		return errors.Wrap(err, "failed to unmarshal video metadata")
+		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
 	}
 
-	query := db.NewSelectUploaderQuery(app.db.BunDB(), metadata.UploaderID)
-	uploaders, err := app.db.SelectUploader(query)
+	uploader, err := getOrCreateUser(app.db, metadata)
 	if err != nil {
-		return errors.Wrap(err, "failed to query uploader data")
-	}
-
-	// TODO remove redundant code
-	uploader := db.Uploader{}
-	if len(uploaders) > 0 {
-		uploader = uploaders[0]
-	} else {
-		uploader = db.Uploader{
-			ID:        metadata.UploaderID,
-			URL:       metadata.UploaderURL,
-			Name:      metadata.Uploader,
-			Directory: metadata.UploaderID,
-		}
-		query := db.NewInsertUploaderQuery(app.db.BunDB(), uploader)
-		if err := app.db.InsertUploader(query); err != nil {
-			return errors.Wrap(err, "failed to insert uploader data")
-		}
+		return err
 	}
 
 	if err := app.db.StoreMetadata(metadata.ID, metadataBytes); err != nil {
-		return errors.Wrap(err, "failed to store video metadata")
+		return errors.Wrap(err, ERR_STORE_VIDEO_METADATA)
 	}
 
 	downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
 	if err := os.MkdirAll(downloadDir, 0755); err != nil {
-		return errors.Wrap(err, "failed to make download directory")
+		return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
 	}
 
 	_, err = app.ydl.Download(downloadDir, metadata)
 	if err != nil {
-		return errors.Wrap(err, "failed to download video")
+		return errors.Wrap(err, ERR_DOWNLOAD_VIDEO)
 	}
 
 	path := filepath.Join(app.config.DownloadRootDir, uploader.Directory, audioFilename(metadata.Filename))
 	if err := app.loudness.Tag(path); err != nil {
-		return errors.Wrap(err, "failed to tag loudness")
+		return errors.Wrap(err, ERR_TAG_LOUDNESS)
 	}
 
 	return nil
