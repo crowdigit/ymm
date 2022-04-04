@@ -92,6 +92,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		Filename:    "somefilename.mp3",
 		Duration:    0,
 	}
+	downloadDir := "/asdf"
 
 	s.mockCommandProvider.EXPECT().
 		NewCommand(
@@ -104,6 +105,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		).
 		DoAndReturn(func(name string, args ...string) ydl.Command {
 			command := mock.NewMockCommand(s.mockCtrl)
+			command.EXPECT().SetDir(downloadDir)
 			command.EXPECT().Start().Times(1)
 			command.EXPECT().StderrPipe().
 				Return(io.NopCloser(bytes.NewReader(nil)), nil).
@@ -117,7 +119,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		Times(1)
 
 	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
-	got, err := youtubeDl.Download("/asdf", metadata)
+	got, err := youtubeDl.Download(downloadDir, metadata)
 	s.Nil(err)
 
 	expected := ydl.DownloadResult{}

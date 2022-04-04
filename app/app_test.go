@@ -84,7 +84,11 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb)
+	config := app.ApplicationConfig{
+		DownloadRootDir: s.T().TempDir(),
+	}
+
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb, config)
 	s.Nil(app.DownloadSingle(url))
 }
 
@@ -163,7 +167,11 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb)
+	config := app.ApplicationConfig{
+		DownloadRootDir: s.T().TempDir(),
+	}
+
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockDb, config)
 	s.Nil(app.DownloadPlaylist(url))
 }
 
