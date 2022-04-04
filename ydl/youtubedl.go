@@ -2,7 +2,6 @@ package ydl
 
 import (
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/crowdigit/ymm/command"
@@ -44,24 +43,6 @@ func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([][]byte, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func readStream(wg *sync.WaitGroup, reader io.ReadCloser, chOut chan<- []byte, chErr chan<- error) {
-	defer wg.Done()
-	readBuffer := make([]byte, 1024)
-	for {
-		read, err := reader.Read(readBuffer)
-		if read > 0 {
-			sendBuffer := make([]byte, read)
-			copy(sendBuffer, readBuffer)
-			chOut <- sendBuffer
-		} else if err == io.EOF {
-			break
-		} else if err != nil {
-			chErr <- errors.Wrap(err, "failed to read from reader stream")
-			break
-		}
-	}
-}
-
 func handleMetadataStream(chStdout <-chan []byte, chStderr <-chan []byte, chJson chan<- []byte, chClose chan struct{}, chErr <-chan error) {
 	json := make([]byte, 0, 8192)
 loop:
@@ -82,14 +63,14 @@ loop:
 }
 
 func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
-	command := ydl.commandProvider.NewCommand("youtube-dl", "--dump-json", url)
+	cmd := ydl.commandProvider.NewCommand("youtube-dl", "--dump-json", url)
 
-	stderr, err := command.StderrPipe()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get stderr pipe")
 	}
 
-	stdout, err := command.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get stdout pipe")
 	}
@@ -100,10 +81,10 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
 	chStderr := make(chan []byte)
 	chStdout := make(chan []byte)
 	chErr := make(chan error)
-	go readStream(&wg, stderr, chStderr, chErr)
-	go readStream(&wg, stdout, chStdout, chErr)
+	go command.ReadStream(&wg, stderr, chStderr, chErr)
+	go command.ReadStream(&wg, stdout, chStdout, chErr)
 
-	if err := command.Start(); err != nil {
+	if err := cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "failed to start metadata command")
 	}
 
@@ -116,7 +97,7 @@ func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
 	close(chClose)
 	json := <-chJson
 
-	status, err := command.Wait()
+	status, err := cmd.Wait()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to wait for metadata command")
 	}
@@ -150,21 +131,21 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 		return DownloadResult{}, fmt.Errorf("video %s does not contain format 251", metadata.ID)
 	}
 
-	command := ydl.commandProvider.NewCommand(
+	cmd := ydl.commandProvider.NewCommand(
 		"youtube-dl",
 		"--format", "251",
 		"--extract-audio",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
 		metadata.WebpageURL)
-	command.SetDir(workDir)
+	cmd.SetDir(workDir)
 
-	stderr, err := command.StderrPipe()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return DownloadResult{}, errors.Wrap(err, "failed to get stderr pipe")
 	}
 
-	stdout, err := command.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return DownloadResult{}, errors.Wrap(err, "failed to get stdout pipe")
 	}
@@ -175,10 +156,10 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 	chStderr := make(chan []byte)
 	chStdout := make(chan []byte)
 	chErr := make(chan error)
-	go readStream(&wg, stderr, chStderr, chErr)
-	go readStream(&wg, stdout, chStdout, chErr)
+	go command.ReadStream(&wg, stderr, chStderr, chErr)
+	go command.ReadStream(&wg, stdout, chStdout, chErr)
 
-	if err := command.Start(); err != nil {
+	if err := cmd.Start(); err != nil {
 		return DownloadResult{}, errors.Wrap(err, "failed to start download command")
 	}
 
@@ -189,7 +170,7 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 
 	close(chClose)
 
-	status, err := command.Wait()
+	status, err := cmd.Wait()
 	if err != nil {
 		return DownloadResult{}, errors.Wrap(err, "failed to wait for download command")
 	}

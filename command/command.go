@@ -3,6 +3,9 @@ package command
 import (
 	"io"
 	"os/exec"
+	"sync"
+
+	"github.com/pkg/errors"
 )
 
 //go:generate mockgen -destination=../mock/mock_command.go -package=mock github.com/crowdigit/ymm/command Command
@@ -57,4 +60,22 @@ func (cp commandProviderImpl) NewCommand(name string, arg ...string) Command {
 
 func NewCommandProviderImpl() commandProviderImpl {
 	return commandProviderImpl{}
+}
+
+func ReadStream(wg *sync.WaitGroup, reader io.ReadCloser, chOut chan<- []byte, chErr chan<- error) {
+	defer wg.Done()
+	readBuffer := make([]byte, 1024)
+	for {
+		read, err := reader.Read(readBuffer)
+		if read > 0 {
+			sendBuffer := make([]byte, read)
+			copy(sendBuffer, readBuffer)
+			chOut <- sendBuffer
+		} else if err == io.EOF {
+			break
+		} else if err != nil {
+			chErr <- errors.Wrap(err, "failed to read from reader stream")
+			break
+		}
+	}
 }
