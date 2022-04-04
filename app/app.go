@@ -101,11 +101,12 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	}
 
 	for _, metadatum := range metadata {
-		if _, err := app.ydl.Download(uploaderDirs[metadatum.UploaderID], metadatum); err != nil {
+		uploaderDirectory := uploaderDirs[metadatum.UploaderID]
+		if _, err := app.ydl.Download(uploaderDirectory, metadatum); err != nil {
 			return errors.Wrap(err, "failed to download video with metadata")
 		}
 
-		path := filepath.Join(app.config.DownloadRootDir, audioFilename(metadatum.Filename))
+		path := filepath.Join(uploaderDirectory, audioFilename(metadatum.Filename))
 		if err := app.loudness.Tag(path); err != nil {
 			return errors.Wrap(err, "failed to tag loudness")
 		}
@@ -166,7 +167,7 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to download video")
 	}
 
-	path := filepath.Join(app.config.DownloadRootDir, audioFilename(metadata.Filename))
+	path := filepath.Join(app.config.DownloadRootDir, uploader.Directory, audioFilename(metadata.Filename))
 	if err := app.loudness.Tag(path); err != nil {
 		return errors.Wrap(err, "failed to tag loudness")
 	}
