@@ -26,6 +26,7 @@ type Database interface {
 	StoreMetadata(id string, metadata []byte) error
 	InsertUploader(*bun.InsertQuery) error
 	SelectUploader(*bun.SelectQuery) ([]Uploader, error)
+	BunDB() *bun.DB
 }
 
 type DatabaseConfig struct {

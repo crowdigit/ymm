@@ -35,6 +35,20 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
 }
 
+// BunDB mocks base method.
+func (m *MockDatabase) BunDB() *bun.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BunDB")
+	ret0, _ := ret[0].(*bun.DB)
+	return ret0
+}
+
+// BunDB indicates an expected call of BunDB.
+func (mr *MockDatabaseMockRecorder) BunDB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BunDB", reflect.TypeOf((*MockDatabase)(nil).BunDB))
+}
+
 // InsertUploader mocks base method.
 func (m *MockDatabase) InsertUploader(arg0 *bun.InsertQuery) error {
 	m.ctrl.T.Helper()
