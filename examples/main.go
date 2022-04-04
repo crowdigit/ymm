@@ -48,7 +48,11 @@ func main() {
 		log.Fatalf("failed to initialize DB: %s", err)
 	}
 
-	app := app.NewApplicationImpl(logger, youtubeDl, db)
+	config := app.ApplicationConfig{
+		DownloadRootDir: filepath.Join(xdg.DataHome, "ymm", "music"),
+	}
+
+	app := app.NewApplicationImpl(logger, youtubeDl, db, config)
 	logger.Info("initialized application")
 	if err := app.DownloadSingle(url); err != nil {
 		log.Fatalf("%s", err)
