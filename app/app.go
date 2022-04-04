@@ -14,17 +14,23 @@ type Application interface {
 	DownloadSingle(url string) error
 }
 
+type ApplicationConfig struct {
+	DownloadRootDir string
+}
+
 type ApplicationImpl struct {
 	logger *zap.SugaredLogger
 	ydl    ydl.YoutubeDL
 	db     db.Database
+	config ApplicationConfig
 }
 
-func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, db db.Database) Application {
+func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, db db.Database, config ApplicationConfig) Application {
 	return ApplicationImpl{
 		logger: logger,
 		ydl:    ydl,
 		db:     db,
+		config: config,
 	}
 }
 
