@@ -156,6 +156,7 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
 		metadata.WebpageURL)
+	command.SetDir(workDir)
 
 	stderr, err := command.StderrPipe()
 	if err != nil {

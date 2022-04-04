@@ -1,6 +1,9 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/crowdigit/ymm/db"
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
@@ -74,7 +77,11 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 				return errors.Wrap(err, "failed to insert uploader data")
 			}
 		}
-		uploaderDirs[uploader.ID] = uploader.Directory
+		downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
+		if err := os.MkdirAll(downloadDir, 0755); err != nil {
+			return errors.Wrap(err, "failed to make download directory")
+		}
+		uploaderDirs[uploader.ID] = downloadDir
 
 		metadata = append(metadata, metadatum)
 		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
@@ -112,6 +119,7 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to query uploader data")
 	}
 
+	// TODO remove redundant code
 	uploader := db.Uploader{}
 	if len(uploaders) > 0 {
 		uploader = uploaders[0]
@@ -132,7 +140,12 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to store video metadata")
 	}
 
-	_, err = app.ydl.Download(uploader.Directory, metadata)
+	downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
+	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+		return errors.Wrap(err, "failed to make download directory")
+	}
+
+	_, err = app.ydl.Download(downloadDir, metadata)
 	if err != nil {
 		return errors.Wrap(err, "failed to download video")
 	}
