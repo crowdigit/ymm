@@ -6,16 +6,14 @@ import (
 
 	"github.com/crowdigit/ymm/db"
 	"github.com/stretchr/testify/suite"
-	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/driver/sqliteshim"
 )
 
 type QueryTestSuite struct {
 	suite.Suite
 
-	sqldb  *sql.DB
-	bundb  *bun.DB
-	dbImpl *db.DatabaseImpl
+	sqldb *sql.DB
+	db    *db.DatabaseImpl
 }
 
 func (s *QueryTestSuite) SetupTest() {
@@ -25,8 +23,7 @@ func (s *QueryTestSuite) SetupTest() {
 
 	dbImpl, err := db.NewDatabaseImpl(db.DatabaseConfig{}, sqldb)
 	s.Nil(err)
-	s.dbImpl = dbImpl
-	s.bundb = dbImpl.BunDB()
+	s.db = dbImpl
 
 	_, err = s.sqldb.Exec(
 		`CREATE TABLE IF NOT EXISTS uploaders
@@ -39,7 +36,7 @@ func (s *QueryTestSuite) SetupTest() {
 }
 
 func (s *QueryTestSuite) TearDownTest() {
-	s.Nil(s.bundb.Close())
+	s.Nil(s.sqldb.Close())
 }
 
 func (s *QueryTestSuite) TestSelectUser() {
@@ -60,11 +57,40 @@ func (s *QueryTestSuite) TestSelectUser() {
 		uploader.Directory)
 	s.Nil(err)
 
-	query := db.NewGetUploaderQuery(s.bundb, uploader.ID)
-	uploaders, err := s.dbImpl.SelectUploader(query)
+	query := db.NewGetUploaderQuery(s.db.BunDB(), uploader.ID)
+	uploaders, err := s.db.SelectUploader(query)
 	s.Nil(err)
 	s.Len(uploaders, 1)
 	s.Equal(uploader, uploaders[0])
+}
+
+func (s *QueryTestSuite) TestInsertUser() {
+	expected := db.Uploader{
+		ID:        "uploader id",
+		URL:       "uploader url",
+		Name:      "uploader name",
+		Directory: "uploader directory",
+	}
+
+	query := db.NewInsertUploaderQuery(s.db.BunDB(), expected)
+	s.Nil(s.db.InsertUploader(query))
+
+	rows, err := s.sqldb.Query(
+		`SELECT * FROM uploaders WHERE id = ?`,
+		expected.ID,
+	)
+	s.Nil(err)
+
+	s.True(rows.Next())
+
+	got := db.Uploader{}
+	s.Nil(
+		rows.Scan(
+			&got.ID,
+			&got.URL,
+			&got.Name,
+			&got.Directory))
+	s.Equal(expected, got)
 }
 
 func TestQueryTestSuite(t *testing.T) {
