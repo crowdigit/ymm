@@ -88,7 +88,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			Return(nil),
 		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
 			Return(result, nil),
-		s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, "some_filename.mp3")),
+		s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, metadata.UploaderID, "some_filename.mp3")),
 	}
 	gomock.InOrder(order...)
 
@@ -175,7 +175,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
 			Return(results[i], nil))
-		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, filenames[i])))
+		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, metadata[i].UploaderID, filenames[i])))
 	}
 	gomock.InOrder(order...)
 
