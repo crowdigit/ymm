@@ -16,9 +16,9 @@ type Uploader struct {
 	bun.BaseModel `bun:"table:uploaders"`
 
 	ID        string `bun:",pk"`
-	URL       string
-	Name      string
-	Directory string
+	URL       string `bun:",notnull"`
+	Name      string `bun:",notnull"`
+	Directory string `bun:",notnull"`
 }
 
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
@@ -40,6 +40,11 @@ type DatabaseImpl struct {
 
 func NewDatabaseImpl(config DatabaseConfig, sqldb *sql.DB) (*DatabaseImpl, error) {
 	bundb := bun.NewDB(sqldb, sqlitedialect.New())
+
+	ctx := context.Background()
+	if _, err := bundb.NewCreateTable().IfNotExists().Table("uploaders").Model(&Uploader{}).Exec(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to create uploaders table")
+	}
 
 	return &DatabaseImpl{
 		config: config,

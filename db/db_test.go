@@ -38,6 +38,7 @@ func (s *DBTestSuite) SetupTest() {
 	}
 	s.Nil(os.Mkdir(s.config.MetadataDir, 0755))
 
+	s.mockSql.ExpectExec("CREATE TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
 	db, err := db.NewDatabaseImpl(s.config, s.mockDb)
 	s.Nil(err)
 	s.db = db

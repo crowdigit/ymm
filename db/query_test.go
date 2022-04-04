@@ -24,15 +24,6 @@ func (s *QueryTestSuite) SetupTest() {
 	dbImpl, err := db.NewDatabaseImpl(db.DatabaseConfig{}, sqldb)
 	s.Nil(err)
 	s.db = dbImpl
-
-	_, err = s.sqldb.Exec(
-		`CREATE TABLE IF NOT EXISTS uploaders
-		( id        TEXT PRIMARY KEY NOT NULL
-		, url       TEXT             NOT NULL
-		, name      TEXT             NOT NULL
-		, directory TEXT             NOT NULL
-		)`)
-	s.Nil(err)
 }
 
 func (s *QueryTestSuite) TearDownTest() {
