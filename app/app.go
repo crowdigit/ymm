@@ -105,7 +105,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return errors.Wrap(err, "failed to download video with metadata")
 		}
 
-		path := audioFilename(metadatum.Filename)
+		path := filepath.Join(app.config.DownloadRootDir, audioFilename(metadatum.Filename))
 		if err := app.loudness.Tag(path); err != nil {
 			return errors.Wrap(err, "failed to tag loudness")
 		}
@@ -166,7 +166,8 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 		return errors.Wrap(err, "failed to download video")
 	}
 
-	if err := app.loudness.Tag(audioFilename(metadata.Filename)); err != nil {
+	path := filepath.Join(app.config.DownloadRootDir, audioFilename(metadata.Filename))
+	if err := app.loudness.Tag(path); err != nil {
 		return errors.Wrap(err, "failed to tag loudness")
 	}
 

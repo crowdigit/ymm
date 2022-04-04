@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"database/sql"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -68,6 +69,10 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	s.Nil(err)
 	result := ydl.DownloadResult{}
 
+	config := app.ApplicationConfig{
+		DownloadRootDir: s.T().TempDir(),
+	}
+
 	order := []*gomock.Call{
 		s.mockYdl.EXPECT().VideoMetadata(url).
 			Return(metadataBytes, nil),
@@ -83,13 +88,9 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			Return(nil),
 		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
 			Return(result, nil),
-		s.mockLoudnessScanner.EXPECT().Tag("some_filename.mp3"),
+		s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, "some_filename.mp3")),
 	}
 	gomock.InOrder(order...)
-
-	config := app.ApplicationConfig{
-		DownloadRootDir: s.T().TempDir(),
-	}
 
 	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
 	s.Nil(app.DownloadSingle(url))
@@ -136,7 +137,13 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			Duration:    124,
 		},
 	}
-	filenames := []string{"some_filename_0.mp3", "some_filename_1.mp3"}
+	filenames := []string{
+		"some_filename_0.mp3",
+		"some_filename_1.mp3",
+	}
+	config := app.ApplicationConfig{
+		DownloadRootDir: s.T().TempDir(),
+	}
 	metadataBytes := make([][]byte, 0, len(metadata))
 	for _, metadatum := range metadata {
 		metadatumBytes, err := jsoniter.Marshal(metadatum)
@@ -168,13 +175,9 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	for i := 0; i < len(metadata); i += 1 {
 		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
 			Return(results[i], nil))
-		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filenames[i]))
+		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, filenames[i])))
 	}
 	gomock.InOrder(order...)
-
-	config := app.ApplicationConfig{
-		DownloadRootDir: s.T().TempDir(),
-	}
 
 	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
 	s.Nil(app.DownloadPlaylist(url))
