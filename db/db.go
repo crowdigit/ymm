@@ -94,11 +94,16 @@ func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, erro
 }
 
 func (db *DatabaseImpl) InsertDownload(query *bun.InsertQuery) error {
-	panic("not implemented") // TODO: Implement
+	ctx := context.Background()
+	_, err := query.Exec(ctx)
+	return errors.Wrap(err, "failed to execute insert query")
 }
 
 func (db *DatabaseImpl) SelectDownload(query *bun.SelectQuery) ([]Download, error) {
-	panic("not implemented") // TODO: Implement
+	var downloads []Download
+	ctx := context.Background()
+	err := query.Model(&downloads).Scan(ctx)
+	return downloads, errors.Wrap(err, "failed to query download result")
 }
 
 func (db *DatabaseImpl) BunDB() *bun.DB {
