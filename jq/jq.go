@@ -1,9 +1,8 @@
 package jq
 
 import (
-	"errors"
-
 	"github.com/crowdigit/ymm/command"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -25,5 +24,7 @@ func NewJq(logger *zap.SugaredLogger, commandProvider command.CommandProvider) J
 }
 
 func (jq *JqImpl) Slurp([]byte) ([]byte, error) {
-	return nil, errors.New("JqImpl.Slurp is not implemented")
+	cmd := jq.commandProvider.NewCommand("jq", "--slurp", ".")
+	stdout, err := command.Run(jq.logger, cmd)
+	return stdout, errors.Wrap(err, "failed to run command")
 }

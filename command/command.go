@@ -1,11 +1,13 @@
 package command
 
 import (
+	"fmt"
 	"io"
 	"os/exec"
 	"sync"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 //go:generate mockgen -destination=../mock/mock_command.go -package=mock github.com/crowdigit/ymm/command Command
@@ -78,4 +80,73 @@ func ReadStream(wg *sync.WaitGroup, reader io.ReadCloser, chOut chan<- []byte, c
 			break
 		}
 	}
+}
+
+func handleStream(
+	logger *zap.SugaredLogger,
+	chStdoutIn <-chan []byte,
+	chStdoutOut chan<- []byte,
+	chClose chan struct{},
+	chErrIn <-chan error,
+	chErrOut chan<- error) {
+	result := make([]byte, 0, 8192)
+	var err error
+loop:
+	for {
+		select {
+		case err = <-chErrIn:
+			logger.Errorf("reading from command stdout returned an error: %s", err)
+			break loop
+		case msg := <-chStdoutIn:
+			result = append(result, msg...)
+		case <-chClose:
+			break loop
+		}
+	}
+	chStdoutOut <- result
+	chErrOut <- err
+}
+
+//Run runs command and returns stdout synchronously, dropping stderr
+func Run(logger *zap.SugaredLogger, command Command) ([]byte, error) {
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get stdout pipe")
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	chStdout := make(chan []byte)
+	chStdoutResult := make(chan []byte)
+	chErr := make(chan error)
+	chErrResult := make(chan error)
+	go ReadStream(&wg, stdout, chStdout, chErr)
+
+	if err := command.Start(); err != nil {
+		return nil, errors.Wrap(err, "failed to start command")
+	}
+
+	chClose := make(chan struct{})
+	go handleStream(logger, chStdout, chStdoutResult, chClose, chErr, chErrResult)
+
+	wg.Wait()
+	close(chClose)
+
+	result := <-chStdoutResult
+	err = <-chErrResult
+	if err != nil {
+		return nil, errors.Wrap(err, "stream handler returned error")
+	}
+
+	status, err := command.Wait()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to wait for command")
+	}
+
+	if status != 0 {
+		return nil, fmt.Errorf("command exited with %d", status)
+	}
+
+	return result, nil
 }

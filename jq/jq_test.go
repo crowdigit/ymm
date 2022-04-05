@@ -48,9 +48,6 @@ func (s *JqTestSuite) TestSlurp() {
 		DoAndReturn(func(name string, args ...string) command.Command {
 			command := mock.NewMockCommand(s.mockCtrl)
 			command.EXPECT().Start().Times(1)
-			command.EXPECT().StderrPipe().
-				Return(io.NopCloser(bytes.NewReader(nil)), nil).
-				Times(1)
 			command.EXPECT().StdoutPipe().
 				Return(io.NopCloser(bytes.NewReader(noneWackyOutput)), nil).
 				Times(1)
@@ -60,7 +57,9 @@ func (s *JqTestSuite) TestSlurp() {
 		Times(1)
 
 	jq := jq.NewJq(zap.NewNop().Sugar(), s.mockCommandProvider)
-	s.Nil(jq.Slurp(wackyInput))
+	result, err := jq.Slurp(wackyInput)
+	s.Nil(err)
+	s.Equal(noneWackyOutput, result)
 }
 
 func TestJqTestSuite(t *testing.T) {
