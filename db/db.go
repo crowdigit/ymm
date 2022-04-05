@@ -30,9 +30,8 @@ type Download struct {
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error
-	InsertUploader(*bun.InsertQuery) error
+	Insert(*bun.InsertQuery) error
 	SelectUploader(*bun.SelectQuery) ([]Uploader, error)
-	InsertDownload(*bun.InsertQuery) error
 	SelectDownload(*bun.SelectQuery) ([]Download, error)
 	BunDB() *bun.DB
 }
@@ -80,7 +79,7 @@ func (db *DatabaseImpl) StoreMetadata(id string, metadata []byte) error {
 	return nil
 }
 
-func (db *DatabaseImpl) InsertUploader(query *bun.InsertQuery) error {
+func (db *DatabaseImpl) Insert(query *bun.InsertQuery) error {
 	ctx := context.Background()
 	_, err := query.Exec(ctx)
 	return errors.Wrap(err, "failed to execute insert query")
@@ -91,12 +90,6 @@ func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, erro
 	ctx := context.Background()
 	err := query.Model(&uploaders).Scan(ctx)
 	return uploaders, errors.Wrap(err, "failed to query scan query result")
-}
-
-func (db *DatabaseImpl) InsertDownload(query *bun.InsertQuery) error {
-	ctx := context.Background()
-	_, err := query.Exec(ctx)
-	return errors.Wrap(err, "failed to execute insert query")
 }
 
 func (db *DatabaseImpl) SelectDownload(query *bun.SelectQuery) ([]Download, error) {

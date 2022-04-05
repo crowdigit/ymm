@@ -84,7 +84,7 @@ func (s *DBTestSuite) TestInsertUser() {
 		ExpectExec("INSERT").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	query := db.NewInsertUploaderQuery(s.db.BunDB(), uploader)
-	s.Nil(s.db.InsertUploader(query))
+	s.Nil(s.db.Insert(query))
 }
 
 func (s *DBTestSuite) TestSelectSingleUser() {

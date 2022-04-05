@@ -68,7 +68,7 @@ func insertUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, error
 		Directory: metadata.UploaderID,
 	}
 	query := db.NewInsertUploaderQuery(db_.BunDB(), uploader)
-	if err := db_.InsertUploader(query); err != nil {
+	if err := db_.Insert(query); err != nil {
 		return db.Uploader{}, errors.Wrap(err, "failed to insert uploader data")
 	}
 	return uploader, nil

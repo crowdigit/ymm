@@ -49,32 +49,18 @@ func (mr *MockDatabaseMockRecorder) BunDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BunDB", reflect.TypeOf((*MockDatabase)(nil).BunDB))
 }
 
-// InsertDownload mocks base method.
-func (m *MockDatabase) InsertDownload(arg0 *bun.InsertQuery) error {
+// Insert mocks base method.
+func (m *MockDatabase) Insert(arg0 *bun.InsertQuery) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertDownload", arg0)
+	ret := m.ctrl.Call(m, "Insert", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// InsertDownload indicates an expected call of InsertDownload.
-func (mr *MockDatabaseMockRecorder) InsertDownload(arg0 interface{}) *gomock.Call {
+// Insert indicates an expected call of Insert.
+func (mr *MockDatabaseMockRecorder) Insert(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertDownload", reflect.TypeOf((*MockDatabase)(nil).InsertDownload), arg0)
-}
-
-// InsertUploader mocks base method.
-func (m *MockDatabase) InsertUploader(arg0 *bun.InsertQuery) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertUploader", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InsertUploader indicates an expected call of InsertUploader.
-func (mr *MockDatabaseMockRecorder) InsertUploader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUploader", reflect.TypeOf((*MockDatabase)(nil).InsertUploader), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockDatabase)(nil).Insert), arg0)
 }
 
 // SelectDownload mocks base method.

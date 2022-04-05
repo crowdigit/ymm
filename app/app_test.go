@@ -84,7 +84,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			Return([]db.Uploader{}, nil),
 		s.mockDb.EXPECT().BunDB().
 			Return(s.bundb),
-		s.mockDb.EXPECT().InsertUploader(gomock.Any()).
+		s.mockDb.EXPECT().Insert(gomock.Any()).
 			Return(nil),
 		s.mockDb.EXPECT().StoreMetadata(metadata.ID, metadataBytes).
 			Return(nil),
@@ -172,7 +172,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			Return([]db.Uploader{}, nil))
 		order = append(order, s.mockDb.EXPECT().BunDB().
 			Return(s.bundb))
-		order = append(order, s.mockDb.EXPECT().InsertUploader(gomock.Any()).
+		order = append(order, s.mockDb.EXPECT().Insert(gomock.Any()).
 			Return(nil))
 		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadatum.ID, gomock.Any()).
 			Return(nil))

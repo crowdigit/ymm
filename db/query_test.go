@@ -64,7 +64,7 @@ func (s *QueryTestSuite) TestInsertUser() {
 	}
 
 	query := db.NewInsertUploaderQuery(s.db.BunDB(), expected)
-	s.Nil(s.db.InsertUploader(query))
+	s.Nil(s.db.Insert(query))
 
 	rows, err := s.sqldb.Query(
 		`SELECT * FROM uploaders WHERE id = ?`,
@@ -106,7 +106,7 @@ func (s *QueryTestSuite) TestInsertDownload() {
 	}
 
 	query := db.NewInsertDownloadQuery(s.db.BunDB(), expected)
-	s.Nil(s.db.InsertDownload(query))
+	s.Nil(s.db.Insert(query))
 
 	rows, err := s.sqldb.Query(
 		`SELECT * FROM downloads WHERE id = ?`,
