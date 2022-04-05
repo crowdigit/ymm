@@ -13,7 +13,6 @@ type DownloadResult struct{}
 
 //go:generate mockgen -destination=../mock/mock_ydl.go -package=mock github.com/crowdigit/ymm/ydl YoutubeDL
 type YoutubeDL interface {
-	PlaylistMetadata(url string) ([][]byte, error)
 	VideoMetadata(url string) ([]byte, error)
 	Download(workDir string, metadata VideoMetadata) (DownloadResult, error)
 }
@@ -37,10 +36,6 @@ func contains251Format(formats []Format) bool {
 		}
 	}
 	return false
-}
-
-func (ydl YoutubeDLImpl) PlaylistMetadata(url string) ([][]byte, error) {
-	panic("not implemented") // TODO: Implement
 }
 
 func handleMetadataStream(chStdout <-chan []byte, chStderr <-chan []byte, chJson chan<- []byte, chClose chan struct{}, chErr <-chan error) {

@@ -49,21 +49,6 @@ func (mr *MockYoutubeDLMockRecorder) Download(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockYoutubeDL)(nil).Download), arg0, arg1)
 }
 
-// PlaylistMetadata mocks base method.
-func (m *MockYoutubeDL) PlaylistMetadata(arg0 string) ([][]byte, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PlaylistMetadata", arg0)
-	ret0, _ := ret[0].([][]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PlaylistMetadata indicates an expected call of PlaylistMetadata.
-func (mr *MockYoutubeDLMockRecorder) PlaylistMetadata(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlaylistMetadata", reflect.TypeOf((*MockYoutubeDL)(nil).PlaylistMetadata), arg0)
-}
-
 // VideoMetadata mocks base method.
 func (m *MockYoutubeDL) VideoMetadata(arg0 string) ([]byte, error) {
 	m.ctrl.T.Helper()
