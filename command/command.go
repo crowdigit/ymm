@@ -16,6 +16,7 @@ type Command interface {
 	Start() error
 	StderrPipe() (io.ReadCloser, error)
 	StdoutPipe() (io.ReadCloser, error)
+	StdinPipe() (io.WriteCloser, error)
 	Wait() (int, error)
 }
 
@@ -42,6 +43,10 @@ func (c commandImpl) StderrPipe() (io.ReadCloser, error) {
 
 func (c commandImpl) StdoutPipe() (io.ReadCloser, error) {
 	return c.cmd.StdoutPipe()
+}
+
+func (c commandImpl) StdinPipe() (io.WriteCloser, error) {
+	return c.cmd.StdinPipe()
 }
 
 func (c commandImpl) Wait() (int, error) {

@@ -75,6 +75,21 @@ func (mr *MockCommandMockRecorder) StderrPipe() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StderrPipe", reflect.TypeOf((*MockCommand)(nil).StderrPipe))
 }
 
+// StdinPipe mocks base method.
+func (m *MockCommand) StdinPipe() (io.WriteCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StdinPipe")
+	ret0, _ := ret[0].(io.WriteCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StdinPipe indicates an expected call of StdinPipe.
+func (mr *MockCommandMockRecorder) StdinPipe() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StdinPipe", reflect.TypeOf((*MockCommand)(nil).StdinPipe))
+}
+
 // StdoutPipe mocks base method.
 func (m *MockCommand) StdoutPipe() (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
