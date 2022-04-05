@@ -80,6 +80,10 @@ func (s *AppTestSuite) TestDownloadSingle() {
 			Return(metadataBytes, nil),
 		s.mockDb.EXPECT().BunDB().
 			Return(s.bundb),
+		s.mockDb.EXPECT().SelectDownload(gomock.Any()).
+			Return([]db.Download{}, nil),
+		s.mockDb.EXPECT().BunDB().
+			Return(s.bundb),
 		s.mockDb.EXPECT().SelectUploader(gomock.Any()).
 			Return([]db.Uploader{}, nil),
 		s.mockDb.EXPECT().BunDB().
@@ -91,6 +95,10 @@ func (s *AppTestSuite) TestDownloadSingle() {
 		s.mockYdl.EXPECT().Download(gomock.Any(), metadata).
 			Return(result, nil),
 		s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, metadata.UploaderID, "some_filename.mp3")),
+		s.mockDb.EXPECT().BunDB().
+			Return(s.bundb),
+		s.mockDb.EXPECT().Insert(gomock.Any()).
+			Return(nil),
 	}
 	gomock.InOrder(order...)
 
@@ -168,6 +176,10 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 		s.Nil(err)
 		order = append(order, s.mockDb.EXPECT().BunDB().
 			Return(s.bundb))
+		order = append(order, s.mockDb.EXPECT().SelectDownload(gomock.Any()).
+			Return([]db.Download{}, nil))
+		order = append(order, s.mockDb.EXPECT().BunDB().
+			Return(s.bundb))
 		order = append(order, s.mockDb.EXPECT().SelectUploader(gomock.Any()).
 			Return([]db.Uploader{}, nil))
 		order = append(order, s.mockDb.EXPECT().BunDB().
@@ -181,6 +193,10 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 		order = append(order, s.mockYdl.EXPECT().Download(gomock.Any(), metadata[i]).
 			Return(results[i], nil))
 		order = append(order, s.mockLoudnessScanner.EXPECT().Tag(filepath.Join(config.DownloadRootDir, metadata[i].UploaderID, filenames[i])))
+		order = append(order, s.mockDb.EXPECT().BunDB().
+			Return(s.bundb))
+		order = append(order, s.mockDb.EXPECT().Insert(gomock.Any()).
+			Return(nil))
 	}
 	gomock.InOrder(order...)
 

@@ -16,12 +16,13 @@ import (
 )
 
 const (
-	ERR_MARSHAL_METADATA     = "failed to marshal video metadata"
-	ERR_UNMARSHAL_METADATA   = "failed to unmarshal video metadata"
-	ERR_STORE_VIDEO_METADATA = "failed to store video metadata"
-	ERR_DOWNLOAD_VIDEO       = "failed to download video"
-	ERR_TAG_LOUDNESS         = "failed to tag loudness"
-	ERR_MAKE_DOWNLOAD_DIR    = "failed to make download directory"
+	ERR_MARSHAL_METADATA       = "failed to marshal video metadata"
+	ERR_UNMARSHAL_METADATA     = "failed to unmarshal video metadata"
+	ERR_STORE_VIDEO_METADATA   = "failed to store video metadata"
+	ERR_DOWNLOAD_VIDEO         = "failed to download video"
+	ERR_TAG_LOUDNESS           = "failed to tag loudness"
+	ERR_MAKE_DOWNLOAD_DIR      = "failed to make download directory"
+	ERR_INSERT_DOWNLOAD_RESULT = "failed to insert download result"
 )
 
 //go:generate mockgen -destination=../mock/mock_app.go -package=mock github.com/crowdigit/ymm/app Application
@@ -88,6 +89,11 @@ func getOrCreateUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, 
 	return insertUser(db_, metadata)
 }
 
+type MetadataPair struct {
+	Metadata ydl.VideoMetadata
+	Bytes    []byte
+}
+
 func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	// TODO retry failed downloads
 	// TODO save download result
@@ -110,16 +116,19 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 
 	uploaderDirs := make(map[string]string)
 
-	type Pair = struct {
-		Metadata ydl.VideoMetadata
-		Bytes    []byte
-	}
 	metadataPairs := make(
-		[]Pair,
+		[]MetadataPair,
 		0,
 		len(metadataOriginal))
 
+	parsed := 0
+	filtered := 0
+	downloaded := 0
+
+	defer app.logger.Info("parsed", parsed, "filtered", filtered, "downloaded", downloaded)
+
 	for _, metadatumOriginal := range metadataOriginal {
+		parsed += 1
 		metadatumBytes, err := jsoniter.Marshal(metadatumOriginal)
 		if err != nil {
 			return errors.Wrap(err, ERR_MARSHAL_METADATA)
@@ -128,6 +137,16 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		metadatum := ydl.VideoMetadata{}
 		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
 			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+		}
+
+		query := db.NewSelectDownloadQuery(app.db.BunDB(), metadatum.ID)
+		downloads, err := app.db.SelectDownload(query)
+		if err != nil {
+			errors.Wrap(err, "failed to query download cache")
+		}
+		if len(downloads) > 0 {
+			filtered += 1
+			continue
 		}
 
 		uploader, err := getOrCreateUser(app.db, metadatum)
@@ -147,7 +166,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return errors.Wrap(err, ERR_STORE_VIDEO_METADATA)
 		}
 
-		metadataPairs = append(metadataPairs, Pair{
+		metadataPairs = append(metadataPairs, MetadataPair{
 			Metadata: metadatum,
 			Bytes:    metadatumBytes,
 		})
@@ -165,6 +184,13 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		if err := app.loudness.Tag(path); err != nil {
 			return errors.Wrap(err, ERR_TAG_LOUDNESS)
 		}
+
+		query := db.NewInsertDownloadQuery(app.db.BunDB(), db.Download{ID: pair.Metadata.ID})
+		if err := app.db.Insert(query); err != nil {
+			return errors.Wrap(err, ERR_INSERT_DOWNLOAD_RESULT)
+		}
+
+		downloaded += 1
 	}
 
 	return nil
@@ -182,6 +208,16 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 	metadata := ydl.VideoMetadata{}
 	if err := jsoniter.Unmarshal(metadataBytes, &metadata); err != nil {
 		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+	}
+
+	selectDownload := db.NewSelectDownloadQuery(app.db.BunDB(), metadata.ID)
+	downloads, err := app.db.SelectDownload(selectDownload)
+	if err != nil {
+		return errors.Wrap(err, "failed to query download cache")
+	}
+	if len(downloads) > 0 {
+		app.logger.Infof("%s is already downloaded", metadata.ID)
+		return nil
 	}
 
 	uploader, err := getOrCreateUser(app.db, metadata)
@@ -206,6 +242,11 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 	path := filepath.Join(app.config.DownloadRootDir, uploader.Directory, audioFilename(metadata.Filename))
 	if err := app.loudness.Tag(path); err != nil {
 		return errors.Wrap(err, ERR_TAG_LOUDNESS)
+	}
+
+	insertDownload := db.NewInsertDownloadQuery(app.db.BunDB(), db.Download{ID: metadata.ID})
+	if err := app.db.Insert(insertDownload); err != nil {
+		return errors.Wrap(err, ERR_INSERT_DOWNLOAD_RESULT)
 	}
 
 	return nil
