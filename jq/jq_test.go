@@ -29,6 +29,21 @@ func (s *JqTestSuite) TearDownTest() {
 	s.mockCtrl.Finish()
 }
 
+type nopCloser struct {
+	io.Writer
+	io.Closer
+}
+
+func (w nopCloser) Close() error {
+	return nil
+}
+
+func newNopCloser(r io.Writer) io.WriteCloser {
+	return nopCloser{
+		Writer: r,
+	}
+}
+
 func (s *JqTestSuite) TestSlurp() {
 	wackyInput := []byte(`{
 		"lol": 1234
@@ -43,6 +58,8 @@ func (s *JqTestSuite) TestSlurp() {
 		"no one": "tell me what to do"
 	}`)
 
+	stdin := new(bytes.Buffer)
+
 	s.mockCommandProvider.EXPECT().
 		NewCommand("jq", "--slurp", ".").
 		DoAndReturn(func(name string, args ...string) command.Command {
@@ -50,6 +67,9 @@ func (s *JqTestSuite) TestSlurp() {
 			command.EXPECT().Start().Times(1)
 			command.EXPECT().StdoutPipe().
 				Return(io.NopCloser(bytes.NewReader(noneWackyOutput)), nil).
+				Times(1)
+			command.EXPECT().StdinPipe().
+				Return(newNopCloser(stdin), nil).
 				Times(1)
 			command.EXPECT().Wait().Times(1)
 			return command
