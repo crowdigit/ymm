@@ -21,11 +21,19 @@ type Uploader struct {
 	Directory string `bun:",notnull"`
 }
 
+type Download struct {
+	bun.BaseModel `bun:"table:downloads"`
+
+	ID string `bun:",pk"`
+}
+
 //go:generate mockgen -destination=../mock/mock_database.go -package=mock github.com/crowdigit/ymm/db Database
 type Database interface {
 	StoreMetadata(id string, metadata []byte) error
 	InsertUploader(*bun.InsertQuery) error
 	SelectUploader(*bun.SelectQuery) ([]Uploader, error)
+	InsertDownload(*bun.InsertQuery) error
+	SelectDownload(*bun.SelectQuery) ([]Download, error)
 	BunDB() *bun.DB
 }
 
@@ -44,6 +52,10 @@ func NewDatabaseImpl(config DatabaseConfig, sqldb *sql.DB) (*DatabaseImpl, error
 	ctx := context.Background()
 	if _, err := bundb.NewCreateTable().IfNotExists().Table("uploaders").Model(&Uploader{}).Exec(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to create uploaders table")
+	}
+
+	if _, err := bundb.NewCreateTable().IfNotExists().Table("downloads").Model(&Download{}).Exec(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to create downloads table")
 	}
 
 	return &DatabaseImpl{
@@ -79,6 +91,14 @@ func (db *DatabaseImpl) SelectUploader(query *bun.SelectQuery) ([]Uploader, erro
 	ctx := context.Background()
 	err := query.Model(&uploaders).Scan(ctx)
 	return uploaders, errors.Wrap(err, "failed to query scan query result")
+}
+
+func (db *DatabaseImpl) InsertDownload(query *bun.InsertQuery) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (db *DatabaseImpl) SelectDownload(query *bun.SelectQuery) ([]Download, error) {
+	panic("not implemented") // TODO: Implement
 }
 
 func (db *DatabaseImpl) BunDB() *bun.DB {
