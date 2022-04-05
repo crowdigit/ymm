@@ -83,6 +83,43 @@ func (s *QueryTestSuite) TestInsertUser() {
 	s.Equal(expected, got)
 }
 
+func (s *QueryTestSuite) TestSelectDownload() {
+	download := db.Download{ID: "video id"}
+	_, err := s.sqldb.Exec(
+		`INSERT INTO downloads
+		( id )
+		VALUES
+		( ? )`,
+		download.ID)
+	s.Nil(err)
+
+	query := db.NewSelectDownloadQuery(s.db.BunDB(), download.ID)
+	downloads, err := s.db.SelectDownload(query)
+	s.Nil(err)
+	s.Len(downloads, 1)
+	s.Equal(download, downloads[0])
+}
+
+func (s *QueryTestSuite) TestInsertDownload() {
+	expected := db.Download{
+		ID: "video ID",
+	}
+
+	query := db.NewInsertDownloadQuery(s.db.BunDB(), expected)
+	s.Nil(s.db.InsertDownload(query))
+
+	rows, err := s.sqldb.Query(
+		`SELECT * FROM downloads WHERE id = ?`,
+		expected.ID,
+	)
+	s.Nil(err)
+	s.True(rows.Next())
+
+	got := db.Download{}
+	s.Nil(rows.Scan(&got.ID))
+	s.Equal(expected, got)
+}
+
 func TestQueryTestSuite(t *testing.T) {
 	suite.Run(t, new(QueryTestSuite))
 }
