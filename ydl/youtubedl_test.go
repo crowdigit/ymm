@@ -32,44 +32,6 @@ func (s *YoutubeDLTestSuite) TearDownTest() {
 	s.mockCtrl.Finish()
 }
 
-func (s *YoutubeDLTestSuite) TestPlaylistMetadata() {
-	testOutputFile, err := os.Open("./test.list.json")
-	s.Nil(err)
-
-	testOutput, err := io.ReadAll(testOutputFile)
-	s.Nil(err)
-
-	url := "http://asdf.com/some/url"
-
-	s.mockCommandProvider.EXPECT().
-		NewCommand("youtube-dl", "--dump-json", url).
-		DoAndReturn(func(name string, args ...string) command.Command {
-			command := mock.NewMockCommand(s.mockCtrl)
-			command.EXPECT().Start().Times(1)
-			command.EXPECT().StderrPipe().
-				Return(io.NopCloser(bytes.NewReader(nil)), nil).
-				Times(1)
-			command.EXPECT().StdoutPipe().
-				Return(io.NopCloser(bytes.NewReader(testOutput)), nil).
-				Times(1)
-			command.EXPECT().Wait().Times(1)
-			return command
-		}).
-		Times(1)
-
-	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
-	results, err := youtubeDl.PlaylistMetadata(url)
-	s.Nil(err)
-
-	got := make([]ydl.VideoMetadata, len(results))
-	for i, result := range results {
-		s.Nil(jsoniter.Unmarshal(result, &got[i]))
-	}
-
-	expected := commonTestMetadataList
-	s.Equal(expected, got)
-}
-
 func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 	testOutputFile, err := os.Open("./test.json")
 	s.Nil(err)

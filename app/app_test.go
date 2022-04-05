@@ -144,11 +144,11 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	config := app.ApplicationConfig{
 		DownloadRootDir: s.T().TempDir(),
 	}
-	metadataBytes := make([][]byte, 0, len(metadata))
+	metadataBytes := make([]byte, 0)
 	for _, metadatum := range metadata {
 		metadatumBytes, err := jsoniter.Marshal(metadatum)
 		s.Nil(err)
-		metadataBytes = append(metadataBytes, metadatumBytes)
+		metadataBytes = append(metadataBytes, metadatumBytes...)
 	}
 	results := []ydl.DownloadResult{
 		{}, {},
@@ -156,11 +156,13 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	s.Equal(len(metadata), len(results))
 
 	order := make([]*gomock.Call, 0)
-	order = append(order, s.mockYdl.EXPECT().PlaylistMetadata(url).
-		DoAndReturn(func(url string) ([][]byte, error) {
+	order = append(order, s.mockYdl.EXPECT().VideoMetadata(url).
+		DoAndReturn(func(url string) ([]byte, error) {
 			return metadataBytes, nil
 		}))
-	for i, metadatumBytes := range metadataBytes {
+	for i, metadatum := range metadata {
+		metadatumBytes, err := jsoniter.Marshal(metadatum)
+		s.Nil(err)
 		order = append(order, s.mockDb.EXPECT().BunDB().
 			Return(s.bundb))
 		order = append(order, s.mockDb.EXPECT().SelectUploader(gomock.Any()).
