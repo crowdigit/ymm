@@ -24,8 +24,8 @@ func NewJq(logger *zap.SugaredLogger, commandProvider command.CommandProvider) J
 }
 
 func (jq *JqImpl) Slurp(input []byte) ([]byte, error) {
-	jq.logger.Info("entered JqImpl.Slurp")
-	defer jq.logger.Info("exiting JqImpl.Slurp")
+	jq.logger.Debug("entered JqImpl.Slurp")
+	defer jq.logger.Debug("exiting JqImpl.Slurp")
 	cmd := jq.commandProvider.NewCommand("jq", "--slurp", ".")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -38,6 +38,5 @@ func (jq *JqImpl) Slurp(input []byte) ([]byte, error) {
 	}()
 
 	stdout, err := command.Run(jq.logger, cmd)
-	jq.logger.Infof("jq result: %s", string(stdout))
 	return stdout, errors.Wrap(err, "failed to run command")
 }

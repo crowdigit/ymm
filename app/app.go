@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,14 +98,10 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		return errors.Wrap(err, "failed to fetch playlist metadata")
 	}
 
-	log.Printf("before")
-
 	metadataBytes1, err := app.jq.Slurp(metadataBytes0)
 	if err != nil {
 		return errors.Wrap(err, "failed to run jq command")
 	}
-
-	log.Printf("after")
 
 	metadataOriginal := []map[string]any{}
 	if err := jsoniter.Unmarshal(metadataBytes1, &metadataOriginal); err != nil {
