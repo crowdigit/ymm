@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	ERR_MARSHAL_METADATA     = "failed to marshal video metadata"
 	ERR_UNMARSHAL_METADATA   = "failed to unmarshal video metadata"
 	ERR_STORE_VIDEO_METADATA = "failed to store video metadata"
 	ERR_DOWNLOAD_VIDEO       = "failed to download video"
@@ -89,14 +90,33 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	// TODO save download result
 	// TODO configurable concurrent downloads
 
-	metadataBytes, err := app.ydl.PlaylistMetadata(url)
+	metadataBytes, err := app.ydl.VideoMetadata(url)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch playlist metadata")
 	}
 
-	metadata := make([]ydl.VideoMetadata, 0, len(metadataBytes))
+	metadataOriginal := []map[string]any{}
+	if err := jsoniter.Unmarshal(metadataBytes, &metadataOriginal); err != nil {
+		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+	}
+
 	uploaderDirs := make(map[string]string)
-	for _, metadatumBytes := range metadataBytes {
+
+	type Pair = struct {
+		Metadata ydl.VideoMetadata
+		Bytes    []byte
+	}
+	metadataPairs := make(
+		[]Pair,
+		0,
+		len(metadataOriginal))
+
+	for _, metadatumOriginal := range metadataOriginal {
+		metadatumBytes, err := jsoniter.Marshal(metadatumOriginal)
+		if err != nil {
+			return errors.Wrap(err, ERR_MARSHAL_METADATA)
+		}
+
 		metadatum := ydl.VideoMetadata{}
 		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
 			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
@@ -107,25 +127,33 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return err
 		}
 
-		downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
-		if err := os.MkdirAll(downloadDir, 0755); err != nil {
-			return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
+		if _, exists := uploaderDirs[uploader.ID]; !exists {
+			uploaderDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
+			if err := os.MkdirAll(uploaderDir, 0755); err != nil {
+				return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
+			}
+			uploaderDirs[uploader.ID] = uploaderDir
 		}
-		uploaderDirs[uploader.ID] = downloadDir
 
-		metadata = append(metadata, metadatum)
 		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
-			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+			return errors.Wrap(err, ERR_STORE_VIDEO_METADATA)
 		}
+
+		metadataPairs = append(metadataPairs, Pair{
+			Metadata: metadatum,
+			Bytes:    metadatumBytes,
+		})
 	}
 
-	for _, metadatum := range metadata {
-		uploaderDirectory := uploaderDirs[metadatum.UploaderID]
-		if _, err := app.ydl.Download(uploaderDirectory, metadatum); err != nil {
+	for _, pair := range metadataPairs {
+		uploaderDirectory, exists := uploaderDirs[pair.Metadata.UploaderID]
+		if !exists {
+			return errors.New("how?; this is definitely a bug")
+		} else if _, err := app.ydl.Download(uploaderDirectory, pair.Metadata); err != nil {
 			return errors.Wrap(err, ERR_DOWNLOAD_VIDEO)
 		}
 
-		path := filepath.Join(uploaderDirectory, audioFilename(metadatum.Filename))
+		path := filepath.Join(uploaderDirectory, audioFilename(pair.Metadata.Filename))
 		if err := app.loudness.Tag(path); err != nil {
 			return errors.Wrap(err, ERR_TAG_LOUDNESS)
 		}
