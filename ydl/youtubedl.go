@@ -58,7 +58,12 @@ loop:
 }
 
 func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
-	cmd := ydl.commandProvider.NewCommand("youtube-dl", "--dump-json", url)
+	cmd := ydl.commandProvider.NewCommand(
+		"yt-dlp",
+		"-o",
+		"%(title)s-%(id)s.%(ext)s",
+		"--dump-json",
+		url)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -127,7 +132,9 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 	}
 
 	cmd := ydl.commandProvider.NewCommand(
-		"youtube-dl",
+		"yt-dlp",
+		"-o",
+		"%(title)s-%(id)s.%(ext)s",
 		"--format", "251",
 		"--extract-audio",
 		"--audio-format", "mp3",

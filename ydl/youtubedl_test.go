@@ -42,7 +42,12 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 	url := "http://asdf.com/some/url"
 
 	s.mockCommandProvider.EXPECT().
-		NewCommand("youtube-dl", "--dump-json", url).
+		NewCommand(
+			"yt-dlp",
+			"-o",
+			"%(title)s-%(id)s.%(ext)s",
+			"--dump-json",
+			url).
 		DoAndReturn(func(name string, args ...string) command.Command {
 			command := mock.NewMockCommand(s.mockCtrl)
 			command.EXPECT().Start().Times(1)
@@ -94,7 +99,9 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 
 	s.mockCommandProvider.EXPECT().
 		NewCommand(
-			"youtube-dl",
+			"yt-dlp",
+			"-o",
+			"%(title)s-%(id)s.%(ext)s",
 			"--format", "251",
 			"--extract-audio",
 			"--audio-format", "mp3",

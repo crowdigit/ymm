@@ -125,7 +125,9 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	filtered := 0
 	downloaded := 0
 
-	defer app.logger.Info("parsed", parsed, "filtered", filtered, "downloaded", downloaded)
+	defer func(parsed *int, filtered *int, downloaded *int) {
+		app.logger.Infow("finisehd", "parsed", *parsed, "filtered", *filtered, "downloaded", *downloaded)
+	}(&parsed, &filtered, &downloaded)
 
 	for _, metadatumOriginal := range metadataOriginal {
 		parsed += 1

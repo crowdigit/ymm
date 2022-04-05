@@ -25,7 +25,7 @@ func main() {
 	defer loggerP.Sync()
 	logger := loggerP.Sugar()
 
-	url := "https://www.youtube.com/playlist?list=PLcRmrvAR4VMLytNOpIw_ZDq_Zc__ARzEF"
+	url := "https://www.youtube.com/playlist?list=PLcRmrvAR4VMI059jnMfqB4-6eicKuSt66"
 
 	commandProvider := command.NewCommandProviderImpl()
 	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
