@@ -25,6 +25,7 @@ type AppTestSuite struct {
 	mockCtrl            *gomock.Controller
 	mockYdl             *mock.MockYoutubeDL
 	mockLoudnessScanner *mock.MockLoudnessScanner
+	mockJq              *mock.MockJq
 	mockDb              *mock.MockDatabase
 	bundb               *bun.DB
 }
@@ -33,6 +34,7 @@ func (s *AppTestSuite) SetupTest() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockYdl = mock.NewMockYoutubeDL(s.mockCtrl)
 	s.mockLoudnessScanner = mock.NewMockLoudnessScanner(s.mockCtrl)
+	s.mockJq = mock.NewMockJq(s.mockCtrl)
 	s.mockDb = mock.NewMockDatabase(s.mockCtrl)
 
 	sqldb, err := sql.Open(sqliteshim.ShimName, ":memory:")
@@ -92,7 +94,7 @@ func (s *AppTestSuite) TestDownloadSingle() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockJq, s.mockDb, config)
 	s.Nil(app.DownloadSingle(url))
 }
 
@@ -154,14 +156,15 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 		{}, {},
 	}
 	s.Equal(len(metadata), len(results))
+	metadataBytesSlurped, err := jsoniter.Marshal(metadata)
+	s.Nil(err)
 
 	order := make([]*gomock.Call, 0)
 	order = append(order, s.mockYdl.EXPECT().VideoMetadata(url).
-		DoAndReturn(func(url string) ([]byte, error) {
-			return metadataBytes, nil
-		}))
-	for i, metadatum := range metadata {
-		metadatumBytes, err := jsoniter.Marshal(metadatum)
+		Return(metadataBytes, nil))
+	order = append(order, s.mockJq.EXPECT().Slurp(metadataBytes).
+		Return(metadataBytesSlurped, nil))
+	for _, metadatum := range metadata {
 		s.Nil(err)
 		order = append(order, s.mockDb.EXPECT().BunDB().
 			Return(s.bundb))
@@ -171,7 +174,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 			Return(s.bundb))
 		order = append(order, s.mockDb.EXPECT().InsertUploader(gomock.Any()).
 			Return(nil))
-		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadata[i].ID, metadatumBytes).
+		order = append(order, s.mockDb.EXPECT().StoreMetadata(metadatum.ID, gomock.Any()).
 			Return(nil))
 	}
 	for i := 0; i < len(metadata); i += 1 {
@@ -181,7 +184,7 @@ func (s *AppTestSuite) TestDownloadPlaylist() {
 	}
 	gomock.InOrder(order...)
 
-	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockDb, config)
+	app := app.NewApplicationImpl(zap.NewNop().Sugar(), s.mockYdl, s.mockLoudnessScanner, s.mockJq, s.mockDb, config)
 	s.Nil(app.DownloadPlaylist(url))
 }
 

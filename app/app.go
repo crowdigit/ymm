@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/crowdigit/ymm/db"
+	"github.com/crowdigit/ymm/jq"
 	"github.com/crowdigit/ymm/loudness"
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
@@ -37,15 +38,17 @@ type ApplicationImpl struct {
 	logger   *zap.SugaredLogger
 	ydl      ydl.YoutubeDL
 	loudness loudness.LoudnessScanner
+	jq       jq.Jq
 	db       db.Database
 	config   ApplicationConfig
 }
 
-func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, loudness loudness.LoudnessScanner, db db.Database, config ApplicationConfig) Application {
+func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, loudness loudness.LoudnessScanner, jq jq.Jq, db db.Database, config ApplicationConfig) Application {
 	return ApplicationImpl{
 		logger:   logger,
 		ydl:      ydl,
 		loudness: loudness,
+		jq:       jq,
 		db:       db,
 		config:   config,
 	}
@@ -90,13 +93,18 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	// TODO save download result
 	// TODO configurable concurrent downloads
 
-	metadataBytes, err := app.ydl.VideoMetadata(url)
+	metadataBytes0, err := app.ydl.VideoMetadata(url)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch playlist metadata")
 	}
 
+	metadataBytes1, err := app.jq.Slurp(metadataBytes0)
+	if err != nil {
+		return errors.Wrap(err, "failed to run jq command")
+	}
+
 	metadataOriginal := []map[string]any{}
-	if err := jsoniter.Unmarshal(metadataBytes, &metadataOriginal); err != nil {
+	if err := jsoniter.Unmarshal(metadataBytes1, &metadataOriginal); err != nil {
 		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
 	}
 
