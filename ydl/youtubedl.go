@@ -20,12 +20,14 @@ type YoutubeDL interface {
 type YoutubeDLImpl struct {
 	logger          *zap.SugaredLogger
 	commandProvider command.CommandProvider
+	cookies         string
 }
 
-func NewYoutubeDLImpl(logger *zap.SugaredLogger, command command.CommandProvider) YoutubeDL {
+func NewYoutubeDLImpl(logger *zap.SugaredLogger, command command.CommandProvider, cookies string) YoutubeDL {
 	return YoutubeDLImpl{
 		logger:          logger,
 		commandProvider: command,
+		cookies:         cookies,
 	}
 }
 
@@ -58,12 +60,22 @@ loop:
 }
 
 func (ydl YoutubeDLImpl) VideoMetadata(url string) ([]byte, error) {
-	cmd := ydl.commandProvider.NewCommand(
-		"yt-dlp",
+	cmdArgs := make([]string, 0, 6)
+	if len(ydl.cookies) > 0 {
+		cmdArgs = append(
+			cmdArgs,
+			"--cookies",
+			ydl.cookies,
+		)
+	}
+	cmdArgs = append(
+		cmdArgs,
 		"-o",
 		"%(title)s-%(id)s.%(ext)s",
 		"--dump-json",
-		url)
+		url,
+	)
+	cmd := ydl.commandProvider.NewCommand("yt-dlp", cmdArgs...)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -131,15 +143,27 @@ func (ydl YoutubeDLImpl) Download(workDir string, metadata VideoMetadata) (Downl
 		return DownloadResult{}, fmt.Errorf("video %s does not contain format 251", metadata.ID)
 	}
 
-	cmd := ydl.commandProvider.NewCommand(
-		"yt-dlp",
+	cmdArgs := make([]string, 0, 12)
+	if len(ydl.cookies) > 0 {
+		cmdArgs = append(
+			cmdArgs,
+			"--cookies",
+			ydl.cookies,
+		)
+	}
+	cmdArgs = append(
+		cmdArgs,
 		"-o",
 		"%(title)s-%(id)s.%(ext)s",
 		"--format", "251",
 		"--extract-audio",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
-		metadata.WebpageURL)
+		metadata.WebpageURL,
+	)
+	cmd := ydl.commandProvider.NewCommand(
+		"yt-dlp",
+		cmdArgs...)
 	cmd.SetDir(workDir)
 
 	stderr, err := cmd.StderrPipe()

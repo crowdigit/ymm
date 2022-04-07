@@ -62,7 +62,7 @@ func (s *YoutubeDLTestSuite) TestVideoMetadata() {
 		}).
 		Times(1)
 
-	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider, "")
 	result, err := youtubeDl.VideoMetadata(url)
 	s.Nil(err)
 
@@ -123,7 +123,7 @@ func (s *YoutubeDLTestSuite) TestDownload() {
 		}).
 		Times(1)
 
-	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(zap.NewNop().Sugar(), s.mockCommandProvider, "")
 	got, err := youtubeDl.Download(downloadDir, metadata)
 	s.Nil(err)
 

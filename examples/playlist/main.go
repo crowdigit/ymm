@@ -25,10 +25,10 @@ func main() {
 	defer loggerP.Sync()
 	logger := loggerP.Sugar()
 
-	url := "https://www.youtube.com/playlist?list=PLcRmrvAR4VMI059jnMfqB4-6eicKuSt66"
+	url := "https://www.youtube.com/playlist?list=PLcRmrvAR4VMIyXLV3dUq_Lj-Ufc-4aTYx"
 
 	commandProvider := command.NewCommandProviderImpl()
-	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider, "")
 	loudnessScanner := loudness.NewLoudnessScanner(logger, commandProvider)
 	jq := jq.NewJq(logger, commandProvider)
 

@@ -28,7 +28,7 @@ func main() {
 	url := "https://www.youtube.com/watch?v=Ss-ba-g82-0"
 
 	commandProvider := command.NewCommandProviderImpl()
-	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider)
+	youtubeDl := ydl.NewYoutubeDLImpl(logger, commandProvider, "")
 	loudnessScanner := loudness.NewLoudnessScanner(logger, commandProvider)
 	jq := jq.NewJq(logger, commandProvider)
 
