@@ -125,6 +125,10 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	filtered := 0
 	downloaded := 0
 
+	// DB downloads table has unitque constraint, so it needs to filter the same
+	// contents from a playlist
+	idSet := make(map[string]struct{})
+
 	defer func(parsed *int, filtered *int, downloaded *int) {
 		app.logger.Infow("finisehd", "parsed", *parsed, "filtered", *filtered, "downloaded", *downloaded)
 	}(&parsed, &filtered, &downloaded)
@@ -141,6 +145,11 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
 		}
 
+		if _, exists := idSet[metadatum.ID]; exists {
+			filtered += 1
+			continue
+		}
+
 		query := db.NewSelectDownloadQuery(app.db.BunDB(), metadatum.ID)
 		downloads, err := app.db.SelectDownload(query)
 		if err != nil {
@@ -150,6 +159,8 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 			filtered += 1
 			continue
 		}
+
+		idSet[metadatum.ID] = struct{}{}
 
 		uploader, err := getOrCreateUser(app.db, metadatum)
 		if err != nil {
