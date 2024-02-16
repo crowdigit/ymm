@@ -1,17 +1,21 @@
 module github.com/crowdigit/ymm
 
-go 1.18
+go 1.22
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/adrg/xdg v0.4.0
 	github.com/golang/mock v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.1
+	github.com/uptrace/bun v1.1.3
+	github.com/uptrace/bun/dialect/sqlitedialect v1.1.3
+	github.com/uptrace/bun/driver/sqliteshim v1.1.3
+	go.uber.org/zap v1.21.0
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
-	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -23,14 +27,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun v1.1.3 // indirect
-	github.com/uptrace/bun/dialect/sqlitedialect v1.1.3 // indirect
-	github.com/uptrace/bun/driver/sqliteshim v1.1.3 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
 	golang.org/x/tools v0.1.10 // indirect
