@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/crowdigit/ymm/internal"
@@ -20,16 +21,27 @@ var singleCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ci := exec.NewCommandProvider()
-		return internal.DownloadSingle(
-			ci,
-			viper.GetString("jq.path"),
-			viper.GetStringSlice("jq.args"),
-			args[1],
-		)
+
+		var jqConf internal.ExecConfig
+		if err := viper.UnmarshalKey("jq", &jqConf); err != nil {
+			return fmt.Errorf("failed to unmarshal config: %w", err)
+		}
+
+		var ytConf internal.ExecConfig
+		if err := viper.UnmarshalKey("yt", &ytConf); err != nil {
+			return fmt.Errorf("failed to unmarshal config: %w", err)
+		}
+
+		return internal.DownloadSingle(ci, jqConf, ytConf, args[0])
 	},
 }
 
 func init() {
+	viper.SetDefault("yt.path", "yt-dlp")
+	viper.SetDefault("yt.args", []string{"--dump-json"})
+	viper.SetDefault("jq.path", "jaq")
+	viper.SetDefault("jq.args", []string{"--slurp", "."})
+
 	rootCmd.AddCommand(singleCmd)
 }
 
