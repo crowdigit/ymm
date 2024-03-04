@@ -11,18 +11,7 @@ import (
 	"github.com/crowdigit/ymm/loudness"
 	"github.com/crowdigit/ymm/ydl"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
-)
-
-const (
-	ERR_MARSHAL_METADATA       = "failed to marshal video metadata"
-	ERR_UNMARSHAL_METADATA     = "failed to unmarshal video metadata"
-	ERR_STORE_VIDEO_METADATA   = "failed to store video metadata"
-	ERR_DOWNLOAD_VIDEO         = "failed to download video"
-	ERR_TAG_LOUDNESS           = "failed to tag loudness"
-	ERR_MAKE_DOWNLOAD_DIR      = "failed to make download directory"
-	ERR_INSERT_DOWNLOAD_RESULT = "failed to insert download result"
 )
 
 //go:generate mockgen -destination=../mock/mock_app.go -package=mock github.com/crowdigit/ymm/app Application
@@ -44,7 +33,14 @@ type ApplicationImpl struct {
 	config   ApplicationConfig
 }
 
-func NewApplicationImpl(logger *zap.SugaredLogger, ydl ydl.YoutubeDL, loudness loudness.LoudnessScanner, jq jq.Jq, db db.Database, config ApplicationConfig) Application {
+func NewApplicationImpl(
+	logger *zap.SugaredLogger,
+	ydl ydl.YoutubeDL,
+	loudness loudness.LoudnessScanner,
+	jq jq.Jq,
+	db db.Database,
+	config ApplicationConfig,
+) Application {
 	return ApplicationImpl{
 		logger:   logger,
 		ydl:      ydl,
@@ -70,7 +66,7 @@ func insertUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, error
 	}
 	query := db.NewInsertUploaderQuery(db_.BunDB(), uploader)
 	if err := db_.Insert(query); err != nil {
-		return db.Uploader{}, errors.Wrap(err, "failed to insert uploader data")
+		return db.Uploader{}, fmt.Errorf("failed to insert uploader data: %w", err)
 	}
 	return uploader, nil
 }
@@ -79,7 +75,7 @@ func getOrCreateUser(db_ db.Database, metadata ydl.VideoMetadata) (db.Uploader, 
 	query := db.NewSelectUploaderQuery(db_.BunDB(), metadata.UploaderID)
 	uploaders, err := db_.SelectUploader(query)
 	if err != nil {
-		return db.Uploader{}, errors.Wrap(err, "failed to select uploader data")
+		return db.Uploader{}, fmt.Errorf("failed to select uploader data: %w", err)
 	}
 
 	if len(uploaders) > 0 {
@@ -101,17 +97,17 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 
 	metadataBytes0, err := app.ydl.VideoMetadata(url)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch playlist metadata")
+		return fmt.Errorf("failed to fetch playlist metadata: %w", err)
 	}
 
 	metadataBytes1, err := app.jq.Slurp(metadataBytes0)
 	if err != nil {
-		return errors.Wrap(err, "failed to run jq command")
+		return fmt.Errorf("failed to run jq command: %w", err)
 	}
 
 	metadataOriginal := []map[string]any{}
 	if err := jsoniter.Unmarshal(metadataBytes1, &metadataOriginal); err != nil {
-		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+		return fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
 
 	uploaderDirs := make(map[string]string)
@@ -130,19 +126,27 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	idSet := make(map[string]struct{})
 
 	defer func(parsed *int, filtered *int, downloaded *int) {
-		app.logger.Infow("finisehd", "parsed", *parsed, "filtered", *filtered, "downloaded", *downloaded)
+		app.logger.Infow(
+			"finisehd",
+			"parsed",
+			*parsed,
+			"filtered",
+			*filtered,
+			"downloaded",
+			*downloaded,
+		)
 	}(&parsed, &filtered, &downloaded)
 
 	for _, metadatumOriginal := range metadataOriginal {
 		parsed += 1
 		metadatumBytes, err := jsoniter.Marshal(metadatumOriginal)
 		if err != nil {
-			return errors.Wrap(err, ERR_MARSHAL_METADATA)
+			return fmt.Errorf("failed to unmarshal metadata: %w", err)
 		}
 
 		metadatum := ydl.VideoMetadata{}
 		if err := jsoniter.Unmarshal(metadatumBytes, &metadatum); err != nil {
-			return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+			return fmt.Errorf("failed to unmarshal metadata: %w", err)
 		}
 
 		if _, exists := idSet[metadatum.ID]; exists {
@@ -153,7 +157,7 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		query := db.NewSelectDownloadQuery(app.db.BunDB(), metadatum.ID)
 		downloads, err := app.db.SelectDownload(query)
 		if err != nil {
-			errors.Wrap(err, "failed to query download cache")
+			return fmt.Errorf("failed to query download cache: %w", err)
 		}
 		if len(downloads) > 0 {
 			filtered += 1
@@ -170,13 +174,13 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 		if _, exists := uploaderDirs[uploader.ID]; !exists {
 			uploaderDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
 			if err := os.MkdirAll(uploaderDir, 0755); err != nil {
-				return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
+				return fmt.Errorf("failed to make download directory: %w", err)
 			}
 			uploaderDirs[uploader.ID] = uploaderDir
 		}
 
 		if err := app.db.StoreMetadata(metadatum.ID, metadatumBytes); err != nil {
-			return errors.Wrap(err, ERR_STORE_VIDEO_METADATA)
+			return fmt.Errorf("failed to persist metadata into DB: %w", err)
 		}
 
 		metadataPairs = append(metadataPairs, MetadataPair{
@@ -188,19 +192,19 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 	for _, pair := range metadataPairs {
 		uploaderDirectory, exists := uploaderDirs[pair.Metadata.UploaderID]
 		if !exists {
-			return errors.New("how?; this is definitely a bug")
+			panic("how?; this is definitely a bug")
 		} else if _, err := app.ydl.Download(uploaderDirectory, pair.Metadata); err != nil {
-			return errors.Wrap(err, ERR_DOWNLOAD_VIDEO)
+			return fmt.Errorf("failed to download video: %w", err)
 		}
 
 		path := filepath.Join(uploaderDirectory, audioFilename(pair.Metadata.Filename))
 		if err := app.loudness.Tag(path); err != nil {
-			return errors.Wrap(err, ERR_TAG_LOUDNESS)
+			return fmt.Errorf("failed to generate Replaygain tag: %w", err)
 		}
 
 		query := db.NewInsertDownloadQuery(app.db.BunDB(), db.Download{ID: pair.Metadata.ID})
 		if err := app.db.Insert(query); err != nil {
-			return errors.Wrap(err, ERR_INSERT_DOWNLOAD_RESULT)
+			return fmt.Errorf("failed to insert download result into DB: %w", err)
 		}
 
 		downloaded += 1
@@ -210,23 +214,20 @@ func (app ApplicationImpl) DownloadPlaylist(url string) error {
 }
 
 func (app ApplicationImpl) DownloadSingle(url string) error {
-	// TODO retry failed downloads
-	// TODO save download result
-
 	metadataBytes, err := app.ydl.VideoMetadata(url)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch video metadata")
+		return fmt.Errorf("failed to fetch video metadata: %w", err)
 	}
 
 	metadata := ydl.VideoMetadata{}
 	if err := jsoniter.Unmarshal(metadataBytes, &metadata); err != nil {
-		return errors.Wrap(err, ERR_UNMARSHAL_METADATA)
+		return fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
 
 	selectDownload := db.NewSelectDownloadQuery(app.db.BunDB(), metadata.ID)
 	downloads, err := app.db.SelectDownload(selectDownload)
 	if err != nil {
-		return errors.Wrap(err, "failed to query download cache")
+		return fmt.Errorf("failed to query download cache: %w", err)
 	}
 	if len(downloads) > 0 {
 		app.logger.Infof("%s is already downloaded", metadata.ID)
@@ -239,27 +240,31 @@ func (app ApplicationImpl) DownloadSingle(url string) error {
 	}
 
 	if err := app.db.StoreMetadata(metadata.ID, metadataBytes); err != nil {
-		return errors.Wrap(err, ERR_STORE_VIDEO_METADATA)
+		return fmt.Errorf("failed to persist metadata into DB: %w", err)
 	}
 
 	downloadDir := filepath.Join(app.config.DownloadRootDir, uploader.Directory)
 	if err := os.MkdirAll(downloadDir, 0755); err != nil {
-		return errors.Wrap(err, ERR_MAKE_DOWNLOAD_DIR)
+		return fmt.Errorf("failed to make download directory: %w", err)
 	}
 
 	_, err = app.ydl.Download(downloadDir, metadata)
 	if err != nil {
-		return errors.Wrap(err, ERR_DOWNLOAD_VIDEO)
+		return fmt.Errorf("failed to download video: %w", err)
 	}
 
-	path := filepath.Join(app.config.DownloadRootDir, uploader.Directory, audioFilename(metadata.Filename))
+	path := filepath.Join(
+		app.config.DownloadRootDir,
+		uploader.Directory,
+		audioFilename(metadata.Filename),
+	)
 	if err := app.loudness.Tag(path); err != nil {
-		return errors.Wrap(err, ERR_TAG_LOUDNESS)
+		return fmt.Errorf("failed to generate Replaygain tag: %w", err)
 	}
 
 	insertDownload := db.NewInsertDownloadQuery(app.db.BunDB(), db.Download{ID: metadata.ID})
 	if err := app.db.Insert(insertDownload); err != nil {
-		return errors.Wrap(err, ERR_INSERT_DOWNLOAD_RESULT)
+		return fmt.Errorf("failed to insert download result into DB: %w", err)
 	}
 
 	return nil
