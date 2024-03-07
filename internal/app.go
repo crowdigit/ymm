@@ -1,11 +1,11 @@
 package internal
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
-	oexec "os/exec"
 	"os/signal"
 
 	"github.com/crowdigit/ymm/pkg/exec"
@@ -16,55 +16,47 @@ type ExecConfig struct {
 	Args []string
 }
 
-func DownloadSingle(ci exec.CommandProvider, jqConf, ytConf ExecConfig, url string) error {
+func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url string) error {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
 
-	ytOpts := exec.CommandOpts{
-		Path: ytConf.Path,
-		Args: append(ytConf.Args, url),
-	}
-	ytCmd := ci.CommandContext(ctx, ytOpts)
-	ytOut, err := ytCmd.StdoutPipe()
+	pipeline, err := NewPipeline(ctx, cp, []PipeSpec{
+		{CmdOpt: exec.CommandOpts{Path: ytConf.Path, Args: append(ytConf.Args, url)}},
+		{CmdOpt: exec.CommandOpts{Path: jqConf.Path, Args: jqConf.Args}},
+	})
 	if err != nil {
-		return fmt.Errorf("failed to get yt command stdout pipe: %w", err)
+		return fmt.Errorf("failed to initialize pipeline: %w", err)
+	} else if err := pipeline.Start(); err != nil {
+		kill()
+		_ = pipeline.Wait()
+		return fmt.Errorf("failed to start pipeline: %w", err)
 	}
 
-	if err := ytCmd.Start(); err != nil {
-		if err, ok := err.(*oexec.ExitError); ok {
-			fmt.Fprintln(os.Stderr, string(err.Stderr))
+	chErr := make(chan error)
+	go func() {
+		for {
+			subBuffer := make([]byte, 1024)
+			read, err := pipeline.output.Read(subBuffer)
+			if read > 0 {
+				fmt.Println(string(subBuffer[:read]))
+			}
+			if errors.Is(err, io.EOF) {
+				fmt.Println("EOF")
+				close(chErr)
+				return
+			} else if err != nil {
+				fmt.Printf("error: %s\n", err)
+				chErr <- err
+				return
+			}
 		}
-		return fmt.Errorf("failed to start yt command: %w", err)
-	}
+	}()
 
-	var ytStdout bytes.Buffer
-	chYtStdoutRead := make(chan error)
-	go read("yt", ytOut, &ytStdout, chYtStdoutRead)
+	<-chErr
 
-	var pipeErr error
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("interrupted")
-	case pipeErr = <-chYtStdoutRead:
-	}
-
-	if err := ytCmd.Wait(); err != nil {
-		if err, ok := err.(*oexec.ExitError); ok {
-			fmt.Fprintf(os.Stderr, "yt returned with status %d\n", err.ExitCode())
-			fmt.Fprintln(os.Stderr, string(err.Stderr))
-			return fmt.Errorf("yt command returned with status code %d", err.ExitCode())
-		}
-		return fmt.Errorf("failed to execute yt command: %w", err)
-	}
-
-	if pipeErr != nil {
-		return fmt.Errorf("failed to read from yt command stdout: %w", pipeErr)
-	}
-
-	n := min(30, ytStdout.Len())
-	fmt.Fprintf(os.Stdout, "read: %s\n", ytStdout.String()[:n])
+	_ = pipeline.Wait()
 
 	return nil
 }

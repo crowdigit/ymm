@@ -1,36 +1,94 @@
 package internal
 
 import (
-	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/crowdigit/ymm/pkg/exec"
 )
 
-// read reads from reader writing the read bytes to buffer.
-// This function is intended to be invoked as goroutine. Any error occurs
-// during read will be sent chErr and read will return. nil value means read
-// operation has succeeded.
-func read(name string, reader io.ReadCloser, buffer *bytes.Buffer, chErr chan<- error) {
-	// bytes.Buffer.Write may panic if becomes too large
-	defer func() {
-		if err := recover(); err != nil {
-			chErr <- fmt.Errorf("read goroutine for %s recovered: %v", name, err)
-		}
-	}()
-	for {
-		subBuffer := make([]byte, 1024)
-		read, err := reader.Read(subBuffer)
-		if read > 0 {
-			buffer.Write(subBuffer[:read])
+type StreamType int
+
+const (
+	Stdout StreamType = iota
+	Stderr StreamType = iota
+	Null   StreamType = iota
+)
+
+func (t StreamType) String() string {
+	switch t {
+	case Stdout:
+		return "stdout"
+	case Stderr:
+		return "stderr"
+	}
+	return "invalid stream type"
+}
+
+type PipeSpec struct {
+	CmdOpt exec.CommandOpts
+	Next   StreamType
+	Other  io.Writer
+}
+
+type Pipeline struct {
+	cmds   []exec.Command
+	output io.Reader
+}
+
+func NewPipeline(
+	ctx context.Context,
+	cp exec.CommandProvider,
+	pipeSpecs []PipeSpec,
+) (Pipeline, error) {
+	if len(pipeSpecs) == 0 {
+		return Pipeline{}, nil
+	}
+
+	prev := pipeSpecs[0].CmdOpt.Stdin
+	var err error
+
+	cmds := make([]exec.Command, 0, len(pipeSpecs))
+	for i, pipeSpec := range pipeSpecs {
+		pipeSpec.CmdOpt.Stdin = prev
+		cmd := cp.CommandContext(ctx, pipeSpec.CmdOpt)
+		cmds = append(cmds, cmd)
+		switch pipeSpec.Next {
+		case Stdout:
+			prev, err = cmd.StdoutPipe()
+		case Stderr:
+			prev, err = cmd.StderrPipe()
+		case Null:
+			if i != len(pipeSpecs)-1 {
+				return Pipeline{}, errors.New("attempted to pipe to null for non-terminal pipe")
+			}
+			prev = nil
 		}
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				chErr <- nil
-			} else {
-				chErr <- err
-			}
-			return
+			return Pipeline{}, fmt.Errorf("failed to get standard stream %d: %w", i, err)
 		}
 	}
+	return Pipeline{cmds, prev}, nil
+}
+
+func (p Pipeline) Start() error {
+	var errs []error
+	for _, cmd := range p.cmds {
+		if err := cmd.Start(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (p Pipeline) Wait() error {
+	var errs []error
+	for _, cmd := range p.cmds {
+		if err := cmd.Wait(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
