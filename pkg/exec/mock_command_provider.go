@@ -120,6 +120,20 @@ func (mr *MockCommandMockRecorder) PID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PID", reflect.TypeOf((*MockCommand)(nil).PID))
 }
 
+// Path mocks base method.
+func (m *MockCommand) Path() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Path")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Path indicates an expected call of Path.
+func (mr *MockCommandMockRecorder) Path() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Path", reflect.TypeOf((*MockCommand)(nil).Path))
+}
+
 // Run mocks base method.
 func (m *MockCommand) Run() error {
 	m.ctrl.T.Helper()

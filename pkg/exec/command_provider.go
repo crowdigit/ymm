@@ -34,6 +34,7 @@ type Command interface {
 	StderrPipe() (io.ReadCloser, error)
 
 	PID() int
+	Path() string
 }
 
 type commandImpl struct {
@@ -42,6 +43,10 @@ type commandImpl struct {
 
 func (c commandImpl) PID() int {
 	return c.Process.Pid
+}
+
+func (c commandImpl) Path() string {
+	return c.Cmd.Path
 }
 
 type commandProvierImpl struct{}
