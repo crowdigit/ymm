@@ -42,6 +42,50 @@ type Pipeline struct {
 	startWaiter sync.Once
 }
 
+func nextStdout(
+	ctx context.Context,
+	cp exec.CommandProvider,
+	index int,
+	pipeSpec *PipeSpec,
+) (exec.Command, io.ReadCloser, error) {
+	pipeSpec.CmdOpt.Stderr = pipeSpec.Other
+	cmd := cp.CommandContext(ctx, pipeSpec.CmdOpt)
+	prev, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get standard stream %d: %w", index, err)
+	}
+	return cmd, prev, nil
+}
+
+func nextStderr(
+	ctx context.Context,
+	cp exec.CommandProvider,
+	index int,
+	pipeSpec *PipeSpec,
+) (exec.Command, io.ReadCloser, error) {
+	pipeSpec.CmdOpt.Stdout = pipeSpec.Other
+	cmd := cp.CommandContext(ctx, pipeSpec.CmdOpt)
+	prev, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get standard stream %d: %w", index, err)
+	}
+	return cmd, prev, nil
+}
+
+func nextNull(
+	ctx context.Context,
+	cp exec.CommandProvider,
+	pipeSpecsLen int,
+	index int,
+	pipeSpec *PipeSpec,
+) (exec.Command, io.ReadCloser, error) {
+	cmd := cp.CommandContext(ctx, pipeSpec.CmdOpt)
+	if pipeSpecsLen-1 != index {
+		return nil, nil, errors.New("attempted to pipe to null for non-terminal pipe")
+	}
+	return cmd, nil, nil
+}
+
 func NewPipeline(
 	ctx context.Context,
 	cp exec.CommandProvider,
@@ -56,22 +100,19 @@ func NewPipeline(
 	cmds := make([]exec.Command, 0, len(pipeSpecs))
 	for i, pipeSpec := range pipeSpecs {
 		pipeSpec.CmdOpt.Stdin = prev
-		cmd := cp.CommandContext(ctx, pipeSpec.CmdOpt)
-		cmds = append(cmds, cmd)
+		var cmd exec.Command
 		switch pipeSpec.Next {
 		case Stdout:
-			prev, err = cmd.StdoutPipe()
+			cmd, prev, err = nextStdout(ctx, cp, i, &pipeSpec)
 		case Stderr:
-			prev, err = cmd.StderrPipe()
+			cmd, prev, err = nextStderr(ctx, cp, i, &pipeSpec)
 		case Null:
-			if i != len(pipeSpecs)-1 {
-				return nil, errors.New("attempted to pipe to null for non-terminal pipe")
-			}
-			prev = nil
+			cmd, prev, err = nextNull(ctx, cp, len(pipeSpecs), i, &pipeSpec)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to get standard stream %d: %w", i, err)
+			return nil, err
 		}
+		cmds = append(cmds, cmd)
 	}
 	return &Pipeline{
 		cmds:        cmds,

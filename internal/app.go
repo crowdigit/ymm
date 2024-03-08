@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -22,9 +23,18 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
 
+	buffers := []*bytes.Buffer{{}, {}, {}}
 	pipeline, err := NewPipeline(ctx, cp, []PipeSpec{
-		{CmdOpt: exec.CommandOpts{Path: ytConf.Path, Args: append(ytConf.Args, url)}},
-		{CmdOpt: exec.CommandOpts{Path: jqConf.Path, Args: jqConf.Args}},
+		{
+			CmdOpt: exec.CommandOpts{Path: ytConf.Path, Args: append(ytConf.Args, url)},
+			Next:   Stdout,
+			Other:  buffers[0],
+		},
+		{
+			CmdOpt: exec.CommandOpts{Path: jqConf.Path, Args: jqConf.Args},
+			Next:   Stdout,
+			Other:  buffers[1],
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to initialize pipeline: %w", err)
@@ -67,5 +77,11 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 		kill()
 		errs = append(errs, err)
 	}
+
+	fmt.Printf("--- buffer[0]\n%s", buffers[0].String())
+	fmt.Println("---")
+	fmt.Printf("--- buffer[1]\n%s", buffers[1].String())
+	fmt.Println("---")
+
 	return errors.Join(errs...)
 }
