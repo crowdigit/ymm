@@ -28,13 +28,19 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 	})
 	if err != nil {
 		return fmt.Errorf("failed to initialize pipeline: %w", err)
-	} else if err := pipeline.Start(); err != nil {
+	}
+
+	err = pipeline.Start()
+	defer func() {
 		kill()
-		_ = pipeline.Wait()
+		for range pipeline.Wait() {
+		}
+	}()
+	if err != nil {
 		return fmt.Errorf("failed to start pipeline: %w", err)
 	}
 
-	chErr := make(chan error)
+	chPipeErr := make(chan error)
 	go func() {
 		for {
 			subBuffer := make([]byte, 1024)
@@ -43,20 +49,23 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 				fmt.Println(string(subBuffer[:read]))
 			}
 			if errors.Is(err, io.EOF) {
-				fmt.Println("EOF")
-				close(chErr)
+				close(chPipeErr)
 				return
 			} else if err != nil {
-				fmt.Printf("error: %s\n", err)
-				chErr <- err
+				chPipeErr <- err
 				return
 			}
 		}
 	}()
 
-	<-chErr
+	if err := <-chPipeErr; err != nil {
+		return fmt.Errorf("failed to operate on pipe: %w", err)
+	}
 
-	_ = pipeline.Wait()
-
-	return nil
+	errs := make([]error, 0, len(pipeline.cmds))
+	for err := range pipeline.Wait() {
+		kill()
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }

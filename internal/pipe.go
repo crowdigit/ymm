@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/crowdigit/ymm/pkg/exec"
 )
@@ -36,20 +37,22 @@ type PipeSpec struct {
 type Pipeline struct {
 	cmds   []exec.Command
 	output io.Reader
+
+	chErr       chan error
+	startWaiter sync.Once
 }
 
 func NewPipeline(
 	ctx context.Context,
 	cp exec.CommandProvider,
 	pipeSpecs []PipeSpec,
-) (Pipeline, error) {
+) (*Pipeline, error) {
 	if len(pipeSpecs) == 0 {
-		return Pipeline{}, nil
+		return nil, errors.New("len(pipeSpecs) == 0")
 	}
 
 	prev := pipeSpecs[0].CmdOpt.Stdin
 	var err error
-
 	cmds := make([]exec.Command, 0, len(pipeSpecs))
 	for i, pipeSpec := range pipeSpecs {
 		pipeSpec.CmdOpt.Stdin = prev
@@ -62,18 +65,23 @@ func NewPipeline(
 			prev, err = cmd.StderrPipe()
 		case Null:
 			if i != len(pipeSpecs)-1 {
-				return Pipeline{}, errors.New("attempted to pipe to null for non-terminal pipe")
+				return nil, errors.New("attempted to pipe to null for non-terminal pipe")
 			}
 			prev = nil
 		}
 		if err != nil {
-			return Pipeline{}, fmt.Errorf("failed to get standard stream %d: %w", i, err)
+			return nil, fmt.Errorf("failed to get standard stream %d: %w", i, err)
 		}
 	}
-	return Pipeline{cmds, prev}, nil
+	return &Pipeline{
+		cmds:        cmds,
+		output:      prev,
+		chErr:       make(chan error),
+		startWaiter: sync.Once{},
+	}, nil
 }
 
-func (p Pipeline) Start() error {
+func (p *Pipeline) Start() error {
 	var errs []error
 	for _, cmd := range p.cmds {
 		if err := cmd.Start(); err != nil {
@@ -83,12 +91,22 @@ func (p Pipeline) Start() error {
 	return errors.Join(errs...)
 }
 
-func (p Pipeline) Wait() error {
-	var errs []error
+func (p *Pipeline) wait() {
+	chErr := make(chan error)
 	for _, cmd := range p.cmds {
-		if err := cmd.Wait(); err != nil {
-			errs = append(errs, err)
+		go func(cmd exec.Command) {
+			chErr <- cmd.Wait()
+		}(cmd)
+	}
+	for i := 0; i < len(p.cmds); i += 1 {
+		if err := <-chErr; err != nil {
+			p.chErr <- err
 		}
 	}
-	return errors.Join(errs...)
+	close(p.chErr)
+}
+
+func (p *Pipeline) Wait() <-chan error {
+	p.startWaiter.Do(func() { go p.wait() })
+	return p.chErr
 }
