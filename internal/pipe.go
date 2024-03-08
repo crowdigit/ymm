@@ -38,7 +38,7 @@ type Pipeline struct {
 	cmds   []exec.Command
 	output io.Reader
 
-	chErr       chan error
+	chErr       chan PipelineError
 	startWaiter sync.Once
 }
 
@@ -117,7 +117,7 @@ func NewPipeline(
 	return &Pipeline{
 		cmds:        cmds,
 		output:      prev,
-		chErr:       make(chan error),
+		chErr:       make(chan PipelineError),
 		startWaiter: sync.Once{},
 	}, nil
 }
@@ -133,21 +133,28 @@ func (p *Pipeline) Start() error {
 }
 
 func (p *Pipeline) wait() {
-	chErr := make(chan error)
-	for _, cmd := range p.cmds {
-		go func(cmd exec.Command) {
-			chErr <- cmd.Wait()
-		}(cmd)
+	chErr := make(chan PipelineError)
+	for index, cmd := range p.cmds {
+		go func(index int, cmd exec.Command) {
+			chErr <- PipelineError{cmd.Wait(), index}
+		}(index, cmd)
 	}
 	for i := 0; i < len(p.cmds); i += 1 {
-		if err := <-chErr; err != nil {
+		if err := <-chErr; err.err != nil {
 			p.chErr <- err
 		}
 	}
 	close(p.chErr)
 }
 
-func (p *Pipeline) Wait() <-chan error {
+// Wait returns channel which will send errors caused by command. It closes
+// if every process in pipeline has exited. Closing without sending any error
+// means all processes have exited normally. It is safe to call Wait multiple
+// times.
+//
+// Errors sent over returned channel is guranteed to be type of [PipelineError]
+// which wraps original error.
+func (p *Pipeline) Wait() <-chan PipelineError {
 	p.startWaiter.Do(func() { go p.wait() })
 	return p.chErr
 }
