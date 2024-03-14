@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/crowdigit/exec"
 	"github.com/crowdigit/ymm/internal"
-	"github.com/crowdigit/ymm/pkg/exec"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

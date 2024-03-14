@@ -7,7 +7,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/crowdigit/ymm/pkg/exec"
+	"github.com/crowdigit/exec"
 )
 
 type StreamType int

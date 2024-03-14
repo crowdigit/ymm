@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/crowdigit/ymm/pkg/exec"
+	"github.com/crowdigit/exec"
 )
 
 type ExecConfig struct {
