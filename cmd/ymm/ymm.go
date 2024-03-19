@@ -22,25 +22,41 @@ var singleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ci := exec.NewCommandProvider()
 
-		var jqConf internal.ExecConfig
-		if err := viper.UnmarshalKey("jq", &jqConf); err != nil {
-			return fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
 		var ytConf internal.ExecConfig
-		if err := viper.UnmarshalKey("yt", &ytConf); err != nil {
+		if err := viper.UnmarshalKey("command.metadata.youtube", &ytConf); err != nil {
 			return fmt.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		return internal.DownloadSingle(ci, jqConf, ytConf, args[0])
+		var jqConf internal.ExecConfig
+		if err := viper.UnmarshalKey("command.metadata.json", &jqConf); err != nil {
+			return fmt.Errorf("failed to unmarshal config: %w", err)
+		}
+
+		return internal.DownloadSingle(ci, ytConf, jqConf, args[0])
 	},
 }
 
 func init() {
-	viper.SetDefault("yt.path", "yt-dlp")
-	viper.SetDefault("yt.args", []string{"--dump-json"})
-	viper.SetDefault("jq.path", "jaq")
-	viper.SetDefault("jq.args", []string{"--slurp", "."})
+	viper.SetDefault("command.metadata.youtube.path", "yt-dlp")
+	viper.SetDefault("command.metadata.youtube.args", []string{"--dump-json", "<url>"})
+	viper.SetDefault("command.metadata.json.path", "jaq")
+	viper.SetDefault("command.metadata.json.args", []string{"--slurp", "."})
+	viper.SetDefault("command.download.youtube.path", "yt-dlp")
+	viper.SetDefault(
+		"command.download.youtube.args",
+		[]string{
+			// "--cookies",
+			// "<cookies>",
+			"--format",
+			"<format>",
+			"--extract-audio",
+			"--audio-format",
+			"mp3",
+			"--audio-quality",
+			"0",
+			"<url>",
+		},
+	)
 
 	rootCmd.AddCommand(singleCmd)
 }
