@@ -23,29 +23,27 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
 
-	buffers := []*bytes.Buffer{{}, {}, {}}
-	pipeline, err := NewPipeline(ctx, cp, []PipeSpec{
+	buffers := []*bytes.Buffer{{}, {}}
+	pipespecs := []exec.PipeSpec{
 		{
 			CmdOpt: exec.CommandOpts{Path: ytConf.Path, Args: append(ytConf.Args, url)},
-			Next:   Stdout,
+			Next:   exec.Stdout,
 			Other:  buffers[0],
 		},
 		{
 			CmdOpt: exec.CommandOpts{Path: jqConf.Path, Args: jqConf.Args},
-			Next:   Stdout,
+			Next:   exec.Stdout,
 			Other:  buffers[1],
 		},
-	})
+	}
+
+	pipeline, err := exec.NewPipeline(ctx, cp, pipespecs)
 	if err != nil {
 		return fmt.Errorf("failed to initialize pipeline: %w", err)
 	}
 
 	err = pipeline.Start()
-	defer func() {
-		kill()
-		for range pipeline.Wait() {
-		}
-	}()
+	defer pipeline.Cancel(kill)
 	if err != nil {
 		return fmt.Errorf("failed to start pipeline: %w", err)
 	}
@@ -54,7 +52,7 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 	go func() {
 		for {
 			subBuffer := make([]byte, 1024)
-			read, err := pipeline.output.Read(subBuffer)
+			read, err := pipeline.Output().Read(subBuffer)
 			if read > 0 {
 				fmt.Println(string(subBuffer[:read]))
 			}
@@ -67,21 +65,20 @@ func DownloadSingle(cp exec.CommandProvider, jqConf, ytConf ExecConfig, url stri
 			}
 		}
 	}()
-
 	if err := <-chPipeErr; err != nil {
 		return fmt.Errorf("failed to operate on pipe: %w", err)
 	}
 
-	errs := make([]error, 0, len(pipeline.cmds))
-	for err := range pipeline.Wait() {
-		kill()
-		errs = append(errs, err)
+	if errs := pipeline.Any(kill); errs != nil {
+		fmt.Fprintln(os.Stderr, errs)
+		for i, err := range errs {
+			fmt.Println(err)
+			if buffers[errs[i].Index].Len() > 0 {
+				fmt.Println(buffers[i].String())
+			}
+		}
+		return errs
 	}
 
-	fmt.Printf("--- buffer[0]\n%s", buffers[0].String())
-	fmt.Println("---")
-	fmt.Printf("--- buffer[1]\n%s", buffers[1].String())
-	fmt.Println("---")
-
-	return errors.Join(errs...)
+	return nil
 }
