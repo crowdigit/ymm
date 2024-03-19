@@ -11,23 +11,38 @@ type ExecConfig struct {
 	Args []string
 }
 
-func DownloadSingle(cp exec.CommandProvider, ytConf, jqConf ExecConfig, url string) error {
-	for i := range ytConf.Args {
-		if ytConf.Args[i] == "<url>" {
-			ytConf.Args[i] = url
+func replacePlaceholder(args []string, placeholder, url string) {
+	for i := range args {
+		if args[i] == placeholder {
+			args[i] = url
 		}
 	}
+}
 
-	jqMetadata, err := fetchMetadata(cp, ytConf, jqConf, url)
+func DownloadSingle(
+	cp exec.CommandProvider,
+	cmdYtMetadata, cmdJq, cmdYtDownload ExecConfig,
+	url string,
+) error {
+	replacePlaceholder(cmdYtMetadata.Args, "<url>", url)
+	replacePlaceholder(cmdYtDownload.Args, "<url>", url)
+
+	jqMetadata, err := fetchMetadata(cp, cmdYtMetadata, cmdJq)
 	if err != nil {
 		return fmt.Errorf("failed to fetch media metadata: %w", err)
 	}
 
-	if err := validateFormats(jqMetadata); err != nil {
+	format, err := validateFormats(jqMetadata)
+	if err != nil {
 		return fmt.Errorf("failed to validate available media formats: %w", err)
 	}
 
-	fmt.Println("perfectly valid video!")
+	replacePlaceholder(cmdYtDownload.Args, "<format>", format)
+	if err := downloadVideo(cp, cmdYtDownload); err != nil {
+		return fmt.Errorf("failed to download media: %w", err)
+	}
+
+	// TODO persist metadata into DB
 
 	return nil
 }

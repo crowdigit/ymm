@@ -24,17 +24,22 @@ var singleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ci := exec.NewCommandProvider()
 
-		var ytConf internal.ExecConfig
-		if err := viper.UnmarshalKey("command.metadata.youtube", &ytConf); err != nil {
+		var cmdYtMetadata internal.ExecConfig
+		if err := viper.UnmarshalKey("command.metadata.youtube", &cmdYtMetadata); err != nil {
 			return fmt.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		var jqConf internal.ExecConfig
-		if err := viper.UnmarshalKey("command.metadata.json", &jqConf); err != nil {
+		var cmdJq internal.ExecConfig
+		if err := viper.UnmarshalKey("command.metadata.json", &cmdJq); err != nil {
 			return fmt.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		return internal.DownloadSingle(ci, ytConf, jqConf, args[0])
+		var cmdYtDownload internal.ExecConfig
+		if err := viper.UnmarshalKey("command.download.youtube", &cmdYtDownload); err != nil {
+			return fmt.Errorf("failed to unmarshal config: %w", err)
+		}
+
+		return internal.DownloadSingle(ci, cmdYtMetadata, cmdJq, cmdYtDownload, args[0])
 	},
 }
 

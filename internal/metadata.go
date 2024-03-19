@@ -49,8 +49,7 @@ type JqMetadata struct {
 
 func fetchMetadata(
 	cp exec.CommandProvider,
-	ytConf, jqConf ExecConfig,
-	url string,
+	cmdYtMetadata, cmdJq ExecConfig,
 ) ([]JqMetadata, error) {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
@@ -60,12 +59,15 @@ func fetchMetadata(
 	buffers := []*bytes.Buffer{{}, {}}
 	pipespecs := []exec.PipeSpec{
 		{
-			CmdOpt: exec.CommandOpts{Path: ytConf.Path, Args: append(ytConf.Args, url)},
-			Next:   exec.Stdout,
-			Other:  buffers[0],
+			CmdOpt: exec.CommandOpts{
+				Path: cmdYtMetadata.Path,
+				Args: cmdYtMetadata.Args,
+			},
+			Next:  exec.Stdout,
+			Other: buffers[0],
 		},
 		{
-			CmdOpt: exec.CommandOpts{Path: jqConf.Path, Args: jqConf.Args},
+			CmdOpt: exec.CommandOpts{Path: cmdJq.Path, Args: cmdJq.Args},
 			Next:   exec.Stdout,
 			Other:  buffers[1],
 		},
@@ -110,7 +112,8 @@ func fetchMetadata(
 	return metadata, nil
 }
 
-func validateFormats(metadata []JqMetadata) error {
+func validateFormats(metadata []JqMetadata) (string, error) {
+	var selectedFormat string
 	for i := range metadata {
 	extractor:
 		switch metadata[i].Extractor {
@@ -118,14 +121,15 @@ func validateFormats(metadata []JqMetadata) error {
 			// Youtube - 251 format is required
 			for _, format := range metadata[i].Formats {
 				if format.FormatID == "251" {
+					selectedFormat = format.FormatID
 					break extractor
 				}
 			}
 			// TODO error with context
-			return fmt.Errorf("required format for Youtube video (251) is missing")
+			return "", fmt.Errorf("required format for Youtube video (251) is missing")
 		default:
-			return fmt.Errorf("not implemented extractor: %s", metadata[i].Extractor)
+			return "", fmt.Errorf("not implemented extractor: %s", metadata[i].Extractor)
 		}
 	}
-	return nil
+	return selectedFormat, nil
 }
