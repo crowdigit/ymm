@@ -14,6 +14,7 @@ func downloadVideo(
 	youtube ConfigExec,
 	url string,
 	format string,
+	dir string,
 ) error {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
@@ -25,6 +26,7 @@ func downloadVideo(
 	cmd := cp.CommandContext(ctx, exec.CommandOpts{
 		Path:   youtube.Path,
 		Args:   youtube.Args,
+		Dir:    dir,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
