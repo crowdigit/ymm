@@ -50,11 +50,14 @@ type JqMetadata struct {
 func fetchMetadata(
 	cp exec.CommandProvider,
 	youtube, json ConfigExec,
+	url string,
 ) ([]JqMetadata, error) {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
+
+	youtube = youtube.ReplacePlaceholder("<url>", url)
 
 	buffers := []*bytes.Buffer{{}, {}}
 	pipespecs := []exec.PipeSpec{
@@ -112,24 +115,18 @@ func fetchMetadata(
 	return metadata, nil
 }
 
-func validateFormats(metadata []JqMetadata) (string, error) {
-	var selectedFormat string
-	for i := range metadata {
-	extractor:
-		switch metadata[i].Extractor {
-		case "youtube":
-			// Youtube - 251 format is required
-			for _, format := range metadata[i].Formats {
-				if format.FormatID == "251" {
-					selectedFormat = format.FormatID
-					break extractor
-				}
+func selectFormat(metadata JqMetadata) (string, error) {
+	switch metadata.Extractor {
+	case "youtube":
+		// Youtube - 251 format is required
+		for _, format := range metadata.Formats {
+			if format.FormatID == "251" {
+				return format.FormatID, nil
 			}
-			// TODO error with context
-			return "", fmt.Errorf("required format for Youtube video (251) is missing")
-		default:
-			return "", fmt.Errorf("not implemented extractor: %s", metadata[i].Extractor)
 		}
+		// TODO error with context
+		return "", fmt.Errorf("required format for Youtube video (251) is missing")
+	default:
+		return "", fmt.Errorf("not implemented extractor: %s", metadata.Extractor)
 	}
-	return selectedFormat, nil
 }

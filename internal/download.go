@@ -12,11 +12,15 @@ import (
 func downloadVideo(
 	cp exec.CommandProvider,
 	youtube ConfigExec,
+	url string,
+	format string,
 ) error {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
+
+	youtube = youtube.ReplacePlaceholder("<url>", url).ReplacePlaceholder("<format>", format)
 
 	cmd := cp.CommandContext(ctx, exec.CommandOpts{
 		Path:   youtube.Path,

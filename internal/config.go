@@ -5,11 +5,18 @@ type ConfigExec struct {
 	Args []string
 }
 
-func (c ConfigExec) ReplacePlaceholder(placeholder, value string) {
-	for i := range c.Args {
-		if c.Args[i] == placeholder {
-			c.Args[i] = value
+func (c ConfigExec) ReplacePlaceholder(placeholder, value string) ConfigExec {
+	args := make([]string, 0, len(c.Args))
+	for _, arg := range c.Args {
+		if arg == placeholder {
+			args = append(args, value)
+		} else {
+			args = append(args, arg)
 		}
+	}
+	return ConfigExec{
+		Path: c.Path,
+		Args: args,
 	}
 }
 

@@ -7,25 +7,27 @@ import (
 )
 
 func DownloadSingle(cp exec.CommandProvider, config Config, url string) error {
-	config.Command.Metadata.Youtube.ReplacePlaceholder("<url>", url)
-	config.Command.Download.Youtube.ReplacePlaceholder("<url>", url)
-
 	jqMetadata, err := fetchMetadata(
 		cp,
 		config.Command.Metadata.Youtube,
 		config.Command.Metadata.JSON,
+		url,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to fetch media metadata: %w", err)
 	}
+	if len(jqMetadata) != 1 {
+		// TODO error with context
+		return fmt.Errorf("fetched zero metadata")
+	}
 
-	format, err := validateFormats(jqMetadata)
+	format, err := selectFormat(jqMetadata[0])
 	if err != nil {
 		return fmt.Errorf("failed to validate available media formats: %w", err)
 	}
 	config.Command.Download.Youtube.ReplacePlaceholder("<format>", format)
 
-	if err := downloadVideo(cp, config.Command.Download.Youtube); err != nil {
+	if err := downloadVideo(cp, config.Command.Download.Youtube, url, format); err != nil {
 		return fmt.Errorf("failed to download media: %w", err)
 	}
 
