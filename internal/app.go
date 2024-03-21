@@ -6,28 +6,15 @@ import (
 	"github.com/crowdigit/exec"
 )
 
-type ExecConfig struct {
-	Path string
-	Args []string
-}
+func DownloadSingle(cp exec.CommandProvider, config Config, url string) error {
+	config.Command.Metadata.Youtube.ReplacePlaceholder("<url>", url)
+	config.Command.Download.Youtube.ReplacePlaceholder("<url>", url)
 
-func replacePlaceholder(args []string, placeholder, url string) {
-	for i := range args {
-		if args[i] == placeholder {
-			args[i] = url
-		}
-	}
-}
-
-func DownloadSingle(
-	cp exec.CommandProvider,
-	cmdYtMetadata, cmdJq, cmdYtDownload ExecConfig,
-	url string,
-) error {
-	replacePlaceholder(cmdYtMetadata.Args, "<url>", url)
-	replacePlaceholder(cmdYtDownload.Args, "<url>", url)
-
-	jqMetadata, err := fetchMetadata(cp, cmdYtMetadata, cmdJq)
+	jqMetadata, err := fetchMetadata(
+		cp,
+		config.Command.Metadata.Youtube,
+		config.Command.Metadata.JSON,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to fetch media metadata: %w", err)
 	}
@@ -36,9 +23,9 @@ func DownloadSingle(
 	if err != nil {
 		return fmt.Errorf("failed to validate available media formats: %w", err)
 	}
+	config.Command.Download.Youtube.ReplacePlaceholder("<format>", format)
 
-	replacePlaceholder(cmdYtDownload.Args, "<format>", format)
-	if err := downloadVideo(cp, cmdYtDownload); err != nil {
+	if err := downloadVideo(cp, config.Command.Download.Youtube); err != nil {
 		return fmt.Errorf("failed to download media: %w", err)
 	}
 

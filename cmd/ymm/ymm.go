@@ -12,52 +12,47 @@ import (
 	"github.com/spf13/viper"
 )
 
+type ymm struct {
+	cp     exec.CommandProvider
+	config internal.Config
+}
+
+type Command func(*cobra.Command, []string) error
+
+func (a ymm) downloadSingle() *cobra.Command {
+	return &cobra.Command{
+		Use:   "single",
+		Short: "Download a MP3 file from URL",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return internal.DownloadSingle(a.cp, a.config, args[0])
+		},
+	}
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "ymm",
 	Short: "Download MP3 files from Youtube and manage files",
 }
 
-var singleCmd = &cobra.Command{
-	Use:   "single",
-	Short: "Download a MP3 file from URL",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ci := exec.NewCommandProvider()
+func initConfig() (internal.Config, error) {
+	v := viper.New()
 
-		var cmdYtMetadata internal.ExecConfig
-		if err := viper.UnmarshalKey("command.metadata.youtube", &cmdYtMetadata); err != nil {
-			return fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
-		var cmdJq internal.ExecConfig
-		if err := viper.UnmarshalKey("command.metadata.json", &cmdJq); err != nil {
-			return fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
-		var cmdYtDownload internal.ExecConfig
-		if err := viper.UnmarshalKey("command.download.youtube", &cmdYtDownload); err != nil {
-			return fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
-		return internal.DownloadSingle(ci, cmdYtMetadata, cmdJq, cmdYtDownload, args[0])
-	},
-}
-
-func init() {
 	configPath, err := xdg.ConfigFile(filepath.Join("ymm", "config.toml"))
 	if err != nil {
-		panic(err)
+		return internal.Config{}, fmt.Errorf("failed to get config file location: %w", err)
 	}
-	viper.SetConfigName("config")
-	viper.SetConfigType("toml")
-	viper.AddConfigPath(filepath.Dir(configPath))
 
-	viper.SetDefault("command.metadata.youtube.path", "yt-dlp")
-	viper.SetDefault("command.metadata.youtube.args", []string{"--dump-json", "<url>"})
-	viper.SetDefault("command.metadata.json.path", "jaq")
-	viper.SetDefault("command.metadata.json.args", []string{"--slurp", "."})
-	viper.SetDefault("command.download.youtube.path", "yt-dlp")
-	viper.SetDefault(
+	v.SetConfigName("config")
+	v.SetConfigType("toml")
+	v.AddConfigPath(filepath.Dir(configPath))
+
+	v.SetDefault("command.metadata.youtube.path", "yt-dlp")
+	v.SetDefault("command.metadata.youtube.args", []string{"--dump-json", "<url>"})
+	v.SetDefault("command.metadata.json.path", "jaq")
+	v.SetDefault("command.metadata.json.args", []string{"--slurp", "."})
+	v.SetDefault("command.download.youtube.path", "yt-dlp")
+	v.SetDefault(
 		"command.download.youtube.args",
 		[]string{
 			// "--cookies",
@@ -73,21 +68,37 @@ func init() {
 		},
 	)
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			panic(fmt.Errorf("failed to read config file: %w", err))
+			return internal.Config{}, fmt.Errorf("failed to read config file: %w", err)
 		}
-		if err := viper.SafeWriteConfig(); err != nil {
-			panic(fmt.Errorf("failed to write config file: %w", err))
+		if err := v.SafeWriteConfig(); err != nil {
+			return internal.Config{}, fmt.Errorf("failed to write config file: %w", err)
 		}
 	}
 
-	rootCmd.AddCommand(singleCmd)
+	config := internal.Config{}
+	if err := v.Unmarshal(&config); err != nil {
+		return internal.Config{}, fmt.Errorf("failed to unmarshal config file: %w", err)
+	}
+
+	return config, nil
 }
 
 func main() {
-	err := rootCmd.Execute()
+	config, err := initConfig()
 	if err != nil {
+		panic(err)
+	}
+
+	ymm := ymm{
+		cp:     exec.NewCommandProvider(),
+		config: config,
+	}
+
+	rootCmd.AddCommand(ymm.downloadSingle())
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

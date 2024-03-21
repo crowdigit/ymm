@@ -11,7 +11,7 @@ import (
 
 func downloadVideo(
 	cp exec.CommandProvider,
-	cmdYtDownload ExecConfig,
+	youtube ConfigExec,
 ) error {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
@@ -19,8 +19,8 @@ func downloadVideo(
 	defer unregister()
 
 	cmd := cp.CommandContext(ctx, exec.CommandOpts{
-		Path:   cmdYtDownload.Path,
-		Args:   cmdYtDownload.Args,
+		Path:   youtube.Path,
+		Args:   youtube.Args,
 		Dir:    "",
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,

@@ -49,7 +49,7 @@ type JqMetadata struct {
 
 func fetchMetadata(
 	cp exec.CommandProvider,
-	cmdYtMetadata, cmdJq ExecConfig,
+	youtube, json ConfigExec,
 ) ([]JqMetadata, error) {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
@@ -60,14 +60,14 @@ func fetchMetadata(
 	pipespecs := []exec.PipeSpec{
 		{
 			CmdOpt: exec.CommandOpts{
-				Path: cmdYtMetadata.Path,
-				Args: cmdYtMetadata.Args,
+				Path: youtube.Path,
+				Args: youtube.Args,
 			},
 			Next:  exec.Stdout,
 			Other: buffers[0],
 		},
 		{
-			CmdOpt: exec.CommandOpts{Path: cmdJq.Path, Args: cmdJq.Args},
+			CmdOpt: exec.CommandOpts{Path: json.Path, Args: json.Args},
 			Next:   exec.Stdout,
 			Other:  buffers[1],
 		},
