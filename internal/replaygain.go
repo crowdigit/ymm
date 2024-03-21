@@ -9,28 +9,23 @@ import (
 	"github.com/crowdigit/exec"
 )
 
-func downloadVideo(
-	cp exec.CommandProvider,
-	youtube ConfigExec,
-	url string,
-	format string,
-) error {
+func replaygain(cp exec.CommandProvider, replaygain ConfigExec, path string) error {
 	ctx, kill := context.WithCancel(context.Background())
 	defer kill()
 	ctx, unregister := signal.NotifyContext(ctx, os.Interrupt)
 	defer unregister()
 
-	youtube = youtube.ReplacePlaceholder("<url>", url).ReplacePlaceholder("<format>", format)
+	replaygain = replaygain.ReplacePlaceholder("<path>", path)
 
 	cmd := cp.CommandContext(ctx, exec.CommandOpts{
-		Path:   youtube.Path,
-		Args:   youtube.Args,
+		Path:   replaygain.Path,
+		Args:   replaygain.Args,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start download command: %w", err)
+		return fmt.Errorf("failed to run replaygain command: %w", err)
 	}
 
 	return nil

@@ -67,6 +67,8 @@ func initConfig() (internal.Config, error) {
 			"<url>",
 		},
 	)
+	v.SetDefault("command.replaygain.path", "loudness")
+	v.SetDefault("command.replaygain.args", []string{"tag", "--track", "<path>"})
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

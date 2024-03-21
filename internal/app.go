@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/crowdigit/exec"
 )
@@ -27,11 +29,20 @@ func DownloadSingle(cp exec.CommandProvider, config Config, url string) error {
 	}
 	config.Command.Download.Youtube.ReplacePlaceholder("<format>", format)
 
+	// TODO persist metadata into DB
+
 	if err := downloadVideo(cp, config.Command.Download.Youtube, url, format); err != nil {
 		return fmt.Errorf("failed to download media: %w", err)
 	}
 
-	// TODO persist metadata into DB
+	path := strings.TrimSuffix(
+		jqMetadata[0].Filename,
+		filepath.Ext(jqMetadata[0].Filename),
+	) + ".mp3"
+
+	if err := replaygain(cp, config.Command.Replaygain, path); err != nil {
+		return fmt.Errorf("failed to tag replaygain information: %w", err)
+	}
 
 	return nil
 }

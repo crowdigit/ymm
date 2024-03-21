@@ -29,5 +29,6 @@ type Config struct {
 		Download struct {
 			Youtube ConfigExec
 		}
+		Replaygain ConfigExec
 	}
 }
